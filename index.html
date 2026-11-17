@@ -32,6 +32,9 @@ button{font:inherit;color:inherit}
 .brand h1{font-family:var(--display);font-weight:400;font-size:26px;margin:0;line-height:1.1}
 .brand small{display:block;color:var(--ink-soft);font-size:13px}
 .editbtn{display:block;width:100%;margin:14px 0 4px;border:0;border-radius:12px;padding:12px;font-size:15px;cursor:pointer;background:var(--ink);color:#fff}
+.ef .paste{width:100%;box-sizing:border-box;border:1px solid #ddd;border-radius:10px;padding:10px;font-size:15px;font-family:inherit;min-height:110px;resize:vertical}
+.ef .split{margin-top:6px;border:0;border-radius:10px;padding:10px;width:100%;cursor:pointer;font-size:14px;background:#5b7fd6;color:#fff}
+.ef .hint{font-size:12.5px;color:var(--ink-soft);margin:4px 0 0}
 .ef h3{margin-top:14px}
 .ef .row{display:grid;grid-template-columns:1fr auto;gap:6px;background:#f4f1ec;border-radius:12px;padding:8px;margin-bottom:8px}
 .ef .row textarea{grid-column:1/-1;width:100%;box-sizing:border-box;border:1px solid #ddd;border-radius:8px;padding:8px;font-size:15px;font-family:inherit;resize:vertical;min-height:40px}
@@ -996,6 +999,52 @@ function applyStaffDocs(){
   render();
   if(open && !editing){ try{ openDrawer(open); }catch(e){} }
 }
+
+/* 라인 메시지 붙여넣기 → 할 일 목록으로 자동 정리 */
+const PROJ_KW = [
+  ["xmas",/christmas|คริสต์มาส|คริสมาส|xmas|크리스마스/i],
+  ["godtoon",/god\s*toon|ก็อดตูน|ก๊อดตูน|갓툰|สมุดระบายสี|coloring/i],
+  ["lf",/\bLF\b|living\s*life|ลิฟวิ่ง|ลีฟวิ่ง|리빙라이프/i],
+  ["bible",/bible\s*story|ไบเบิ้ล|พระคัมภีร์|바이블/i],
+  ["comic",/comic|การ์ตูน|만화/i],
+  ["news",/news|ข่าว|뉴스/i],
+  ["print",/ปฏิทิน|ปฎิทิน|calendar|roll\s*-?up|โรลอัพ|달력|롤업|พิมพ์/i],
+  ["sub",/caption|subtitle|ซับ|คำบรรยาย|자막|ตรวจคำผิด|proof/i],
+  ["short",/short|ช็อต|ช๊อต|reel|รีล|숏폼/i],
+  ["design",/design|ออกแบบ|กราฟิก|graphic|โปสเตอร์|poster|디자인/i],
+  ["event",/event|อีเวนต์|อีเว้นท์|งานนอก|ประชุม|meeting|행사/i],
+  ["sns",/\bSNS\b|facebook|\bFB\b|youtube|\bYT\b|tiktok|ไลน์@|line@|คอมเมนต์|comment|โพสต์|post|เพจ/i],
+  ["admin",/ใบเสร็จ|บัญชี|การเงิน|รายรับ|รายจ่าย|เอกสาร|ซื้อของ|ออฟฟิศ|มูลนิธิ|admin|행정|재정/i],
+];
+const ST_KW = [
+  ["done",/✅|✔|☑|เสร็จ|เรียบร้อย|done|finish|completed|완료/i],
+  ["blocked",/❌|ติดปัญหา|ติดขัด|ไม่ได้|blocked|막힘/i],
+  ["moved",/เลื่อน|ยกไป|พรุ่งนี้|ทำต่อ|postpone|이월/i],
+  ["doing",/⏳|🔄|กำลัง|ระหว่าง|doing|in progress|진행/i],
+];
+function guessProj(t){
+  for(const [k,re] of PROJ_KW) if(D.projects[k] && re.test(t)) return k;
+  for(const [k,v] of Object.entries(D.projects)) if((v.th && t.includes(v.th)) || (v.ko && t.includes(v.ko))) return k;
+  return "";
+}
+function guessStatus(t){ for(const [k,re] of ST_KW) if(re.test(t)) return k; return "plan"; }
+function parseLine(text, st){
+  const skipHead = /^(today|tomorrow|this week|to\s*do|วันนี้|งานวันนี้|สิ่งที่ต้องทำ|แผนงาน|สรุปงาน|รายงาน|ผลงาน|สัปดาห์นี้|ประจำวัน|อัปเดต|update)\s*[:：\-]?\s*$/i;
+  const names = st ? [st.name, st.kname, st.id].filter(Boolean).map(x=>x.toLowerCase()) : [];
+  const out = [];
+  text.split(/\r?\n/).forEach(raw=>{
+    let l = raw.trim(); if(!l) return;
+    if(skipHead.test(l)) return;
+    if(/^[\d\s\/\.\-]+$/.test(l)) return;                         // 날짜만 있는 줄
+    if(names.length && names.some(n=>l.toLowerCase().replace(/[^\p{L}\s]/gu,"").trim().split(/\s+/).every(w=>w===n || names.includes(w)))) return; // 이름만 있는 줄
+    const s = guessStatus(l);
+    l = l.replace(/^(\s*[-–—•·*▪︎▫️◦●○■□➤►▶︎>]+|\s*\d{1,2}\s*[\.\)]|\s*[✅✔☑❌⏳🔄📌📝🔸🔹⭐️]+)\s*/u, "");
+    l = l.replace(/^\s*[✅✔☑❌⏳🔄]\s*/u,"").replace(/\s*[✅✔☑❌⏳🔄]+\s*$/u,"").trim();
+    if(!l || l.length < 2) return;
+    out.push({p:guessProj(l), txt:l, s});
+  });
+  return out.slice(0,20);
+}
 function openEdit(id){
   const st = D.staff.find(s=>s.id===id); if(!st) return;
   const date = dates[idx], r = report(id,date);
@@ -1011,6 +1060,10 @@ function openEdit(id){
     <form class="ef" id="ef">
       <h3>${T("출근","เข้างาน")}</h3>
       <button type="button" class="ci" id="ciBtn">${ci?`✅ ${T("출근","เข้างาน")} ${esc(ci)} · ${T("다시 누르면 지금 시각으로","กดอีกครั้งเพื่อเปลี่ยนเป็นเวลาปัจจุบัน")}`:`⏰ ${T("지금 출근 체크","ลงเวลาเข้างานตอนนี้")}`}</button>
+      <h3>📋 ${T("라인 메시지 붙여넣기","วางข้อความจากไลน์")}</h3>
+      <textarea class="paste" id="pasteBox" placeholder="${T("라인에 쓰던 그대로 붙여넣으세요. 한 줄에 한 가지씩요.","วางข้อความแบบที่เขียนในไลน์ได้เลย บรรทัดละ 1 งาน")}"></textarea>
+      <button type="button" class="split" id="splitBtn">✨ ${T("할 일로 정리하기","แยกเป็นรายการงาน")}</button>
+      <p class="hint">${T("정리된 내용을 아래에서 확인하고 고친 다음 저장하세요.","ตรวจสอบ/แก้ไขรายการด้านล่าง แล้วกดบันทึก")}</p>
       <h3>${T("오늘 할 일","งานวันนี้")}</h3>
       <div id="rows">${rows.map(rowHTML).join("")}</div>
       <button type="button" class="add" id="addRow">+ ${T("할 일 추가","เพิ่มงาน")}</button>
@@ -1023,6 +1076,14 @@ function openEdit(id){
   const bindDel = () => f.querySelectorAll(".del").forEach(b=>b.onclick=()=>{ b.closest(".row").remove(); });
   bindDel();
   f.querySelector("#addRow").onclick = () => { f.querySelector("#rows").insertAdjacentHTML("beforeend", rowHTML({p:"",txt:"",s:"plan"})); bindDel(); f.querySelector("#rows .row:last-child textarea").focus(); };
+  f.querySelector("#splitBtn").onclick = () => {
+    const box=f.querySelector("#pasteBox"), items=parseLine(box.value, st);
+    if(!items.length){ f.querySelector("#efMsg").textContent=T("정리할 내용이 없어요","ไม่พบรายการงาน"); return; }
+    f.querySelectorAll("#rows .row").forEach(r=>{ if(!r.querySelector(".rt").value.trim()) r.remove(); });
+    f.querySelector("#rows").insertAdjacentHTML("beforeend", items.map(rowHTML).join("")); bindDel();
+    box.value=""; f.querySelector("#efMsg").textContent="";
+    const last=f.querySelector("#rows"); last.scrollIntoView({behavior:"smooth",block:"start"});
+  };
   f.querySelector("#ciBtn").onclick = e => { newCi = nowHM(); e.target.textContent = `✅ ${T("출근","เข้างาน")} ${newCi}`; };
   f.querySelector("#efCancel").onclick = () => openDrawer(id);
   const rm = f.querySelector("#efRm");
