@@ -62,7 +62,7 @@ button{font:inherit;color:inherit}
 .langsw{display:flex;background:var(--paper);border-radius:999px;padding:3px;box-shadow:0 2px 0 #0002;margin-left:auto}
 .langsw button{border:0;background:transparent;border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13.5px}
 .langsw button.on{background:var(--ink);color:#fff}
-body.staff .alerts,body.staff .chip.alert,body.staff .nameplate .q,body.staff .ownerlink{display:none!important}
+body.staff .alerts,body.staff #summary,body.staff .plaque .cnt,body.staff .chip.alert,body.staff .nameplate .q,body.staff .ownerlink{display:none!important}
 html[lang=th] .kname,html[lang=th] .walker .tag em{display:none}
 html[lang=th] body{font-family:"Mali","Noto Sans Thai",var(--body)}
 .datenav{display:flex;align-items:center;gap:6px;background:var(--paper);border-radius:999px;padding:4px;box-shadow:0 2px 0 #0002}
@@ -346,7 +346,7 @@ const STATUS = {
   plan:    {ko:"예정",     c:"var(--s-plan)"},
   doing:   {ko:"진행중",   c:"var(--s-doing)"},
   done:    {ko:"완료",     c:"var(--s-done)"},
-  blocked: {ko:"막힘",     c:"var(--s-blocked)"},
+  blocked: {ko:"도움 필요",     c:"var(--s-blocked)"},
   moved:   {ko:"미완·이월", c:"var(--s-moved)"},
   none:    {ko:"결과 미보고", c:"#b3adbd"}
 };
@@ -356,7 +356,7 @@ const PUBLIC = /github\.io$/.test(location.hostname);
 let STAFF = location.hash === "#staff" || PUBLIC;
 let LANG = (()=>{ try { return localStorage.getItem("cgnLang") || (STAFF ? "th" : "ko"); } catch(e){ return STAFF ? "th" : "ko"; } })();
 const T = (ko, th) => LANG === "th" ? th : ko;
-const STATUS_TH = {plan:"วางแผน", doing:"กำลังทำ", done:"เสร็จแล้ว", blocked:"ติดปัญหา", moved:"ยกไปวันถัดไป", none:"ยังไม่รายงานผล"};
+const STATUS_TH = {plan:"วางแผน", doing:"กำลังทำ", done:"เสร็จแล้ว", blocked:"ต้องการความช่วยเหลือ", moved:"ยกไปวันถัดไป", none:"ยังไม่รายงานผล"};
 const stLabel = k => LANG==="th" ? STATUS_TH[k] : (STATUS[k]||STATUS.plan).ko;
 const tText = t => LANG==="th" ? (t.th || t.ko) : t.ko;
 const roleOf = st => LANG==="th" ? (st.role_th || st.role) : st.role;
@@ -699,7 +699,7 @@ function render(){
   const alerts=[];
   D.staff.forEach(st=>{
     (lastWeek(st.id,date)||[]).forEach(t=>{ if(t.s==="moved"||t.s==="blocked") alerts.push({st,t,why:"지난주 "+STATUS[t.s].ko}); });
-    (report(st.id,date)?.tasks||[]).forEach(t=>{ if(t.s==="blocked") alerts.push({st,t,why:"막힘"}); if(t.s==="moved") alerts.push({st,t,why:"미완·이월"}); });
+    (report(st.id,date)?.tasks||[]).forEach(t=>{ if(t.s==="blocked") alerts.push({st,t,why:"도움 필요"}); if(t.s==="moved") alerts.push({st,t,why:"미완·이월"}); });
   });
   document.getElementById("summary").innerHTML = `
     <div class="chip">${T("보고","ส่งรายงาน")} <b>${reported}</b> / ${D.staff.length-away}${T("명"," คน")}</div>
@@ -708,7 +708,7 @@ function render(){
     ${date<D.current && D.staff.length-away-reported>0?`<div class="chip alert">미제출 <b>${D.staff.length-away-reported}</b>명</div>`:""}
     <div class="chip">${T("할 일","งานทั้งหมด")} <b>${total}</b>${T("개","")}</div>
     <div class="chip">${T("완료","เสร็จแล้ว")} <b>${done}</b></div>
-    <div class="chip">${T("막힘","ติดปัญหา")} <b>${blocked}</b></div>
+    <div class="chip">${T("도움 필요","ต้องการความช่วยเหลือ")} <b>${blocked}</b></div>
     ${alerts.length?`<div class="chip alert">살펴볼 일 <b>${alerts.length}</b></div>`:""}`;
   const soon = (D.absences||[]).filter(a=>a.from>date && a.from<=addDays(date,7));
   document.getElementById("alerts").innerHTML = soon.map(a=>{const st=D.staff.find(s=>s.id===a.id);
@@ -755,7 +755,7 @@ function render(){
   const roomHead = tm => {
     const members = D.staff.filter(s=>s.team===tm.id);
     const rep = members.filter(s=>report(s.id,date)?.tasks?.length).length;
-    return `<div class="plaque"><b>${esc(T(tm.ko, tm.th||tm.ko))}</b><small>${esc(tm.en)} · ${rep}/${members.length} ${T("보고","รายงาน")}</small></div>`;
+    return `<div class="plaque"><b>${esc(T(tm.ko, tm.th||tm.ko))}</b><small>${esc(tm.en)}<span class="cnt"> · ${rep}/${members.length} ${T("보고","รายงาน")}</span></small></div>`;
   };
   const [tp, tm] = D.teams;
   const lay = D.layout;
@@ -1022,7 +1022,7 @@ const PROJ_KW = [
 ];
 const ST_KW = [
   ["done",/✅|✔|☑|(?<!ใบ)เสร็จ|เรียบร้อย|\bdone\b|finished|completed|완료/i],
-  ["blocked",/❌|ติดปัญหา|ติดขัด|blocked|막힘/i],
+  ["blocked",/❌|🙋|ติดปัญหา|ติดขัด|ขอความช่วยเหลือ|ต้องการความช่วยเหลือ|ช่วยด้วย|blocked|막힘|도움/i],
   ["moved",/เลื่อนไป|ยกไป|postpone|이월/i],
   ["doing",/⏳|🔄|กำลัง|ระหว่างทำ|ทำต่อ|\bdoing\b|in progress|진행/i],
 ];
@@ -1156,7 +1156,7 @@ fetch("data.json",{cache:"no-store"}).then(r=>{ if(!r.ok) throw new Error(r.stat
   dates = [...new Set([...Object.keys(D.days), D.current])].sort();
   idx = dates.indexOf(D.current);
   window.drawLegend = () => { document.getElementById("legend").innerHTML = Object.entries(STATUS).map(([k,s])=>`<span><span class="dot" style="background:${s.c}"></span>${stLabel(k)}</span>`).join("")
-    + T(`<span>✨ 모두 완료</span><span>💧 막힘 있음</span>`, `<span>✨ เสร็จทั้งหมด</span><span>💧 มีงานติดปัญหา</span>`); };
+    + T(`<span>✨ 모두 완료</span><span>🙋 도움 필요</span>`, `<span>✨ เสร็จทั้งหมด</span><span>🙋 ต้องการความช่วยเหลือ</span>`); };
   drawLegend();
   tickClock(); setInterval(tickClock, 30000);
   render();
