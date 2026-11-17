@@ -163,6 +163,13 @@ body[data-sky=night] .wallstrip{background-color:#9fb8b4}
 @media (max-width:420px){.mgmt{grid-template-columns:1fr}.side{flex-direction:row;justify-content:center}.shelf{width:96px;height:24px;background:repeating-linear-gradient(90deg,#b27c4c 0 30px,#8f5f37 30px 32px)}.annex{grid-template-columns:1fr}}
 
 /* ---------- desk ---------- */
+.desk.blocked{background:radial-gradient(ellipse at 50% 70%,#ff5a4a33 0%,#ff5a4a14 45%,transparent 70%);animation:helpGlow 1.6s ease-in-out infinite}
+@keyframes helpGlow{0%,100%{box-shadow:0 0 0 0 #ff5a4a00}50%{box-shadow:0 0 0 6px #ff5a4a40}}
+.helpsign{position:absolute;right:-6px;top:44px;z-index:6;background:#ff5a4a;color:#fff;font-weight:700;font-size:12.5px;border-radius:12px;padding:4px 9px 4px 6px;box-shadow:0 3px 0 #b8322633;white-space:nowrap;transform-origin:bottom left;animation:helpWave 1.2s ease-in-out infinite}
+.helpsign .hand{display:inline-block;font-size:17px;vertical-align:-2px;margin-right:2px;transform-origin:70% 90%;animation:handWave .6s ease-in-out infinite alternate}
+@keyframes helpWave{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes handWave{from{transform:rotate(-14deg)}to{transform:rotate(14deg)}}
+@media (prefers-reduced-motion:reduce){.desk.blocked,.helpsign,.helpsign .hand{animation:none}}
 .desk{position:relative;border:0;background:transparent;padding:58px 0 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;border-radius:16px;transition:transform .15s}
 .desk:hover{transform:translateY(-3px)}
 .desk svg{width:140px;height:138px;display:block;overflow:visible}
@@ -709,7 +716,7 @@ function personPhase(id, date){
 let lastGone = -1;
 let lastPhase = null;
 function bubbleOrder(r){
-  const rank = {doing:0, blocked:1, plan:2, moved:3, done:4, final:4};
+  const rank = {blocked:0, doing:1, plan:2, moved:3, done:4, final:4};
   return [...r.tasks].sort((a,b)=>(rank[a.s]??5)-(rank[b.s]??5));
 }
 
@@ -774,6 +781,7 @@ function render(){
       <div class="nameplate">${esc(st.name)} <span class="kname">${esc(st.kname||"")}</span></div></button>`;
     return `<button class="desk ${state}" data-id="${st.id}" aria-label="${esc(st.name)} 상세 보기">
       <div class="bubble ${state==='idle'||mode==='leave'?'idle':''}" data-id="${st.id}" data-mode="${mode}" data-in="${arrived||''}"></div>
+      ${state==="blocked"?`<div class="helpsign"><span class="hand">🙋</span>${T("도움 필요","ขอความช่วยเหลือ")}</div>`:""}
       ${avatar(st,state,true,mode)}
       <div class="nameplate">${esc(st.name)} <span class="kname">${esc(st.kname||"")}</span>${q}</div>
       ${r?.where?`<div class="role">${esc(r.where)}</div>`:""}
