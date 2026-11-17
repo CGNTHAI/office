@@ -41,6 +41,7 @@ button{font:inherit;color:inherit}
 .ef h3{margin-top:14px}
 .ef .row{display:grid;grid-template-columns:1fr auto;gap:6px;background:#f4f1ec;border-radius:12px;padding:8px;margin-bottom:8px}
 .ef .row textarea{grid-column:1/-1;width:100%;box-sizing:border-box;border:1px solid #ddd;border-radius:8px;padding:8px;font-size:15px;font-family:inherit;resize:vertical;min-height:40px}
+.ef .row textarea.rn{grid-column:1/-1;width:100%;box-sizing:border-box;border:1px dashed #c9c2b5;border-radius:8px;padding:7px 8px;font-size:14px;font-family:inherit;resize:vertical;min-height:34px;background:#fffdf8}
 .ef .row .sels{display:flex;gap:6px;flex-wrap:wrap}
 .ef select{border:1px solid #ddd;border-radius:8px;padding:6px;font-size:14px;background:#fff;max-width:100%}
 .ef .del{border:0;background:transparent;font-size:18px;cursor:pointer;color:#a33}
@@ -887,16 +888,17 @@ function paintBubble(c){
   const t = c.list[c.i], p = proj(t.p);
   c.b.innerHTML = `<span class="tag" style="background:${p.color}">${esc(p.ko)}</span>
     ${c.list.length>1?`<span class="cnt">${c.i+1}/${c.list.length}</span>`:""}
-    <div class="txt"><span class="dot" style="background:${STATUS[t.s]?.c||'#999'}"></span>${esc(tText(t))}${LANG!=="th" && t.n?` · ${esc(t.n)}`:""}</div>`;
+    <div class="txt"><span class="dot" style="background:${STATUS[t.s]?.c||'#999'}"></span>${esc(tText(t))}${noteText(t)?` · ${esc(noteText(t))}`:""}</div>`;
 }
 
+const noteText = t => LANG==="th" ? (t.nth||"") : (t.n||t.nth||"");
 function taskList(arr){
   if (!arr || !arr.length) return `<div class="empty">${T("기록이 없어요","ยังไม่มีข้อมูล")}</div>`;
   return `<ul class="tasks">${arr.map(t=>{const p=proj(t.p), s=STATUS[t.s]||STATUS.plan; return `<li>
     <span class="pill" style="background:${s.c}">${stLabel(t.s)}</span>
     <span class="ko">${esc(tText(t))}</span>
     ${LANG!=="th" && t.th && t.th!==t.ko?`<span class="th">${esc(t.th)}</span>`:""}
-    ${LANG!=="th" && t.n?`<span class="note">↳ ${esc(t.n)}</span>`:""}
+    ${noteText(t)?`<span class="note">↳ ${esc(noteText(t))}</span>`:""}
     <span class="pt" style="color:${p.color}">● ${esc(p.ko)}</span></li>`;}).join("")}</ul>`;
 }
 function openDrawer(id){
@@ -1088,12 +1090,12 @@ function openEdit(id, kind){
   const st = D.staff.find(s=>s.id===id); if(!st) return;
   const date = isW ? monday(dates[idx]) : dates[idx], r = isW ? {tasks: weekGoals(id,dates[idx])||[]} : report(id,date);
   const docId = (isW?"week_":"") + date + "_" + id;
-  const rows = (r?.tasks||[]).map(t=>({p:t.p||"", txt:tText(t), s:t.s||"plan", orig:t}));
+  const rows = (r?.tasks||[]).map(t=>({p:t.p||"", txt:tText(t), s:t.s||"plan", note:noteText(t), orig:t}));
   if(!rows.length) rows.push({p:"",txt:"",s:"plan"});
   const ci = ((D.checkin||{})[date]||{})[id];
   const projOpts = sel => `<option value="">${T("프로젝트 (선택)","โปรเจกต์ (ไม่บังคับ)")}</option>` + Object.entries(D.projects).map(([k,v])=>`<option value="${k}" ${k===sel?"selected":""}>${esc(T(v.ko, v.th||v.ko))}</option>`).join("");
   const stOpts = sel => ["plan","doing","done","final","blocked","moved"].map(k=>`<option value="${k}" ${k===sel?"selected":""}>${esc(stLabel(k))}</option>`).join("");
-  const rowHTML = rw => `<div class="row"><div class="sels"><select class="rp" hidden>${projOpts(rw.p)}</select><select class="rs">${stOpts(rw.s)}</select></div><button type="button" class="del" title="ลบ">✕</button><textarea class="rt" rows="2" placeholder="${T("할 일을 적어 주세요","พิมพ์งานที่จะทำ")}">${esc(rw.txt)}</textarea></div>`;
+  const rowHTML = rw => `<div class="row"><div class="sels"><select class="rp" hidden>${projOpts(rw.p)}</select><select class="rs">${stOpts(rw.s)}</select></div><button type="button" class="del" title="ลบ">✕</button><textarea class="rt" rows="2" placeholder="${T("할 일을 적어 주세요","พิมพ์งานที่จะทำ")}">${esc(rw.txt)}</textarea><textarea class="rn" rows="2" ${(rw.s||"plan")==="plan"?"hidden":""} placeholder="${T("💬 진행 상황 설명 (선택)","💬 อธิบายความคืบหน้า (ไม่บังคับ)")}">${esc(rw.note||"")}</textarea></div>`;
   const nowHM = () => { const n=nowBKK(); return String(n.getUTCHours()).padStart(2,"0")+":"+String(n.getUTCMinutes()).padStart(2,"0"); };
   document.getElementById("dbody").innerHTML = `
     <div class="dhead">${avatar(st, stateOf(r), false)}<div><h2>${esc(st.name)}</h2><div class="meta">${isW ? `${T("이번 주 목표","เป้าหมายสัปดาห์นี้")} · ${label(date)}${T(" 주","")}` : label(date)}</div></div></div>
@@ -1115,7 +1117,7 @@ function openEdit(id, kind){
     </form>`;
   showDrawer();
   const f = document.getElementById("ef"); let newCi = ci || null;
-  const bindDel = () => f.querySelectorAll(".del").forEach(b=>b.onclick=()=>{ b.closest(".row").remove(); });
+  const bindDel = () => { f.querySelectorAll(".del").forEach(b=>b.onclick=()=>{ b.closest(".row").remove(); }); f.querySelectorAll(".rs").forEach(sel=>sel.onchange=()=>{ const n=sel.closest(".row").querySelector(".rn"); n.hidden = sel.value==="plan"; if(!n.hidden && !n.value) n.focus(); }); };
   bindDel();
   f.querySelector("#addRow").onclick = () => { f.querySelector("#rows").insertAdjacentHTML("beforeend", rowHTML({p:"",txt:"",s:"plan"})); bindDel(); f.querySelector("#rows .row:last-child textarea").focus(); };
   const setMode = m => { f.querySelector("#mBulk").hidden = m!=="bulk"; f.querySelector("#mOne").hidden = m!=="one"; f.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on", b.dataset.m===m)); f.querySelector("#efSave").hidden = m==="bulk"; };
@@ -1136,7 +1138,10 @@ function openEdit(id, kind){
     const tasks = [...f.querySelectorAll("#rows .row")].map((row,i)=>{ const txt=row.querySelector(".rt").value.trim(); if(!txt) return null;
       const p=guessProj(txt) || row.querySelector(".rp").value, sv=row.querySelector(".rs").value;
       const o = rows.find(x=>x.orig && x.txt===txt)?.orig;
-      return o ? {p, ko:o.ko||txt, th:o.th||txt, s:sv} : {p, ko:txt, th:txt, s:sv}; }).filter(Boolean).slice(0,20);
+      const t = o ? {p, ko:o.ko||txt, th:o.th||txt, s:sv} : {p, ko:txt, th:txt, s:sv};
+      const nt = sv==="plan" ? "" : row.querySelector(".rn").value.trim();
+      if (nt){ if (o && nt===noteText(o)) { if(o.n) t.n=o.n; if(o.nth) t.nth=o.nth; } else { t.nth=nt; t.n=nt; } } else if (o && o.n && !o.nth && sv!=="plan" && LANG==="th") t.n=o.n;
+      return t; }).filter(Boolean).slice(0,20);
     if(!tasks.length){ f.querySelector("#efMsg").textContent=T("할 일을 하나 이상 적어 주세요","กรุณาใส่งานอย่างน้อย 1 รายการ"); return; }
     const b=f.querySelector("#efSave"); b.disabled=true; b.textContent=T("저장 중…","กำลังบันทึก…");
     const data = {date, id, tasks, at: ffs.serverTimestamp()}; if(newCi) data.checkin = newCi;
