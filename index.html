@@ -690,8 +690,8 @@ function phaseOf(date){
   return cur < toMin(D.hours.start) ? "before" : cur < toMin(D.hours.end) ? "work" : "after";
 }
 
-/* 퇴근 모드: 17:30이 지나도, 퇴근 무렵(16:30 이후)에 자기 업무를 업데이트한 사람만 퇴근. 20:00이 되면 모두 퇴근 */
-const UPD_FROM = 16*60+30, ALL_GONE = 20*60;
+/* 퇴근 모드: 17:30이 지나도, 퇴근 무렵(16:30 이후)에 자기 업무를 업데이트한 사람만 퇴근. 시간으로 자동 퇴근시키지 않음(야근) */
+const UPD_FROM = 16*60+30;
 function nowMin(){ const n=nowBKK(); return n.getUTCHours()*60+n.getUTCMinutes(); }
 function updMin(id, date){
   const d = STAFF_DOCS[date+"_"+id]; if(!d || !d.at) return null;
@@ -701,7 +701,6 @@ function updMin(id, date){
 }
 function personPhase(id, date){
   const ph=phaseOf(date); if(ph!=="after") return ph;
-  if (nowMin() >= ALL_GONE) return "after";
   const u = updMin(id, date);
   return (u!=null && u >= UPD_FROM) ? "after" : "work";
 }
