@@ -31,6 +31,15 @@ button{font:inherit;color:inherit}
 .brand-badge{width:44px;height:44px;border-radius:14px;background:var(--ink);color:#fff;display:grid;place-items:center;font-family:var(--display);font-size:15px;letter-spacing:.5px;box-shadow:0 3px 0 #0003}
 .brand h1{font-family:var(--display);font-weight:400;font-size:26px;margin:0;line-height:1.1}
 .brand small{display:block;color:var(--ink-soft);font-size:13px}
+.admbtn{border:0;background:var(--paper);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:13.5px;box-shadow:0 2px 0 #0002;margin-left:8px}
+.admbtn.on{background:var(--ink);color:#fff}
+.admwrap{position:fixed;inset:0;background:#0006;display:grid;place-items:center;z-index:500}
+.admbox{background:#fff;border-radius:16px;padding:20px;width:min(340px,90vw);box-shadow:0 10px 30px #0003;font-size:14px}
+.admbox h3{margin:0 0 6px}.admbox p{margin:0 0 12px;color:#666;line-height:1.4}
+.admbox input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #ccc;border-radius:10px;margin-bottom:8px;font-size:15px}
+.admbox .row{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+.admbox button{border:0;border-radius:10px;padding:9px 14px;cursor:pointer;font-size:14px;background:#eee}
+.admbox button.pri{background:var(--ink);color:#fff}
 .langsw{display:flex;background:var(--paper);border-radius:999px;padding:3px;box-shadow:0 2px 0 #0002;margin-left:auto}
 .langsw button{border:0;background:transparent;border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13.5px}
 .langsw button.on{background:var(--ink);color:#fff}
@@ -262,7 +271,7 @@ body[data-sky=sunset] .street .sun{transform:translateY(40px);fill:#ff9a3c}
     <div class="brand-badge">CGN</div>
     <div><h1>CGN Thai 오피스</h1><small>오늘 누가 무엇을 하고 있나요?</small></div>
   </div>
-  <div class="langsw" role="group" aria-label="언어 · ภาษา"><button data-lang="ko">한국어</button><button data-lang="th">ไทย</button></div>
+  <div class="langsw" role="group" aria-label="언어 · ภาษา"><button data-lang="ko">한국어</button><button data-lang="th">ไทย</button></div><button class="admbtn" id="admBtn" type="button" hidden>🔒</button>
   <div class="datenav" role="group" aria-label="날짜 이동">
     <button id="prev" aria-label="이전 날짜">◀</button>
     <div class="d" id="dateLabel">—</div>
@@ -324,7 +333,8 @@ const STATUS = {
 };
 const WD = ["일","월","화","수","목","금","토"];
 const WD_TH = ["อา.","จ.","อ.","พ.","พฤ.","ศ.","ส."], MON_TH = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
-const STAFF = location.hash === "#staff" || /github\.io$/.test(location.hostname);
+const PUBLIC = /github\.io$/.test(location.hostname);
+let STAFF = location.hash === "#staff" || PUBLIC;
 let LANG = (()=>{ try { return localStorage.getItem("cgnLang") || (STAFF ? "th" : "ko"); } catch(e){ return STAFF ? "th" : "ko"; } })();
 const T = (ko, th) => LANG === "th" ? th : ko;
 const STATUS_TH = {plan:"วางแผน", doing:"กำลังทำ", done:"เสร็จแล้ว", blocked:"ติดปัญหา", moved:"ยกไปวันถัดไป", none:"ยังไม่รายงานผล"};
@@ -951,6 +961,38 @@ document.addEventListener("click", e=>{
   const d = e.target.closest("[data-id]");
   if (d && (d.classList.contains("desk")||d.classList.contains("row")||d.classList.contains("walker"))) openDrawer(d.dataset.id);
 });
+
+/* 관리자 모드 (GitHub 페이지 전용): 장비렌탈과 같은 관리자 계정으로 로그인 */
+const FB_CONFIG={apiKey:"AIzaSyDQc14PHuYCxUjoI0-8PLYGuTrQOMVvNeQ",authDomain:"cgn-rental.firebaseapp.com",projectId:"cgn-rental",storageBucket:"cgn-rental.firebasestorage.app",messagingSenderId:"665689013167",appId:"1:665689013167:web:81cda57f43bdee74b4cd5a"};
+let fa=null, fauth=null, adminUser=null;
+function paintAdm(){ const b=document.getElementById("admBtn"); if(!b) return; b.hidden=!PUBLIC; b.classList.toggle("on",!!adminUser); b.textContent = adminUser ? T("🔓 관리자","🔓 ผู้ดูแล") : "🔒"; b.title = adminUser ? "관리자 모드" : "관리자 로그인"; }
+function admModal(html, bind){ const w=document.createElement("div"); w.className="admwrap"; w.innerHTML=`<div class="admbox">${html}</div>`; w.addEventListener("click",e=>{ if(e.target===w) w.remove(); }); document.body.appendChild(w); bind(w); }
+function openAdm(){
+  if(!fauth){ alertLite(T("잠시 후 다시 눌러 주세요","กรุณาลองใหม่อีกครั้ง")); return; }
+  if(adminUser){ admModal(`<h3>관리자 모드</h3><p>${esc(adminUser.email||"")} 계정으로 보고 있어요.</p><div class="row"><button id="aOut">로그아웃</button><button class="pri" id="aX">닫기</button></div>`, w=>{
+      w.querySelector("#aX").onclick=()=>w.remove();
+      w.querySelector("#aOut").onclick=async()=>{ try{ await fa.signOut(fauth);}catch(e){} w.remove(); }; }); return; }
+  let em=""; try{ em=localStorage.getItem("cgnAdminEmail")||""; }catch(e){}
+  admModal(`<h3>관리자 로그인</h3><p>장비렌탈 관리자 계정으로 로그인하면 관리자 화면(한국어·관리 알림)으로 바뀌어요.</p>
+    <form id="aF"><input id="aE" type="email" placeholder="이메일" autocomplete="username" required value="${esc(em)}"><input id="aP" type="password" placeholder="비밀번호" autocomplete="current-password" required>
+    <div class="row"><button type="button" id="aC">취소</button><button class="pri" id="aG" type="submit">로그인</button></div><p id="aM" style="color:#c0392b;margin:8px 0 0"></p></form>`, w=>{
+      w.querySelector("#aC").onclick=()=>w.remove();
+      w.querySelector("#aF").onsubmit=async ev=>{ ev.preventDefault(); const g=w.querySelector("#aG"); g.disabled=true; g.textContent="확인 중…";
+        const e=w.querySelector("#aE").value.trim();
+        try{ await fa.signInWithEmailAndPassword(fauth,e,w.querySelector("#aP").value); try{localStorage.setItem("cgnAdminEmail",e);}catch(x){} w.remove(); }
+        catch(err){ w.querySelector("#aM").textContent="이메일 또는 비밀번호가 맞지 않아요."; g.disabled=false; g.textContent="로그인"; } }; });
+}
+function alertLite(m){ admModal(`<p>${esc(m)}</p><div class="row"><button class="pri">OK</button></div>`, w=>w.querySelector("button").onclick=()=>w.remove()); }
+if (PUBLIC){
+  document.getElementById("admBtn").onclick=openAdm;
+  Promise.all([import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"),import("https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js")]).then(([appM,authM])=>{
+    fa=authM; fauth=fa.getAuth(appM.initializeApp(FB_CONFIG));
+    fa.onAuthStateChanged(fauth,u=>{ const was=!!adminUser; adminUser=u||null; STAFF=!adminUser;
+      if(adminUser && !was) LANG="ko"; if(!adminUser && was) LANG="th";
+      paintAdm(); if(D){ try{ closeDrawer(); }catch(e){} render(); tickClock(); if(window.drawLegend) drawLegend(); } });
+  }).catch(()=>{});
+}
+paintAdm();
 document.querySelectorAll(".langsw button").forEach(b=>b.onclick=()=>{ LANG=b.dataset.lang; try{localStorage.setItem("cgnLang",LANG);}catch(e){} closeDrawer(); render(); tickClock(); if(window.drawLegend) drawLegend(); });
 document.getElementById("scrim").onclick = closeDrawer;
 document.getElementById("closeBtn").onclick = closeDrawer;
