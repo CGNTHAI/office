@@ -1134,7 +1134,7 @@ function renderEvents(){
     const tag= on ? T("진행 중","วันนี้") : dd===0 ? "D-day" : `D-${dd}`;
     const cls= on||dd===0 ? "today" : dd<=7 ? "soon" : "";
     const title = LANG==="th" ? (e.th||e.ko) : (e.ko||e.th);
-    const when = e.end && e.end!==e.date ? `${evDate(e.date)}~${evDate(e.end)}` : evDate(e.date);
+    const when = (e.end && e.end!==e.date ? `${evDate(e.date)}~${evDate(e.end)}` : evDate(e.date)) + (e.time ? ` ${e.time}` : "");
     const editable = adminUser && e.src==="fb";
     return `<button type="button" class="ev ${cls} ${editable?"adm":""}" ${editable?`data-ev="${e._id}"`:"disabled"}><span class="dd">${tag}</span><span>${esc(title)}</span><span class="dt">${when}</span></button>`;
   });
@@ -1149,6 +1149,7 @@ function openEvForm(id){
   admModal(`<h3>${id?"일정 수정":"일정 추가"}</h3>
     <form id="evF"><label style="font-size:13px">시작일</label><input id="evD" type="date" required value="${esc(e.date)}">
     <label style="font-size:13px">끝나는 날 (하루짜리면 비워 두세요)</label><input id="evE" type="date" value="${esc(e.end||"")}">
+    <label style="font-size:13px">시간 (선택)</label><input id="evTm" type="time" value="${esc(e.time||"")}">
     <input id="evK" placeholder="일정 이름 (한국어)" required value="${esc(e.ko||"")}">
     <input id="evT" placeholder="ชื่อกำหนดการ (태국어 — 비우면 한국어로 보여요)" value="${esc(e.th||"")}">
     <div class="row">${id?`<button type="button" id="evDel" style="margin-right:auto;color:#a33">삭제</button>`:""}<button type="button" id="evC">취소</button><button class="pri" type="submit">저장</button></div>
@@ -1159,7 +1160,7 @@ function openEvForm(id){
       w.querySelector("#evF").onsubmit=async ev=>{ ev.preventDefault();
         const d=w.querySelector("#evD").value, en=w.querySelector("#evE").value, ko=w.querySelector("#evK").value.trim(), th=w.querySelector("#evT").value.trim();
         if(en && en<d){ w.querySelector("#evM").textContent="끝나는 날이 시작일보다 빨라요."; return; }
-        const data={date:d, ko, th, at:ffs.serverTimestamp()}; if(en && en!==d) data.end=en;
+        const tm=w.querySelector("#evTm").value; const data={date:d, ko, th, at:ffs.serverTimestamp()}; if(en && en!==d) data.end=en; if(tm) data.time=tm;
         try{ if(id) await ffs.setDoc(ffs.doc(fdb,"office_events",id),data); else await ffs.addDoc(ffs.collection(fdb,"office_events"),data); w.remove(); }
         catch(x){ w.querySelector("#evM").textContent="저장하지 못했어요. Firebase 규칙을 확인해 주세요."; } };
   });
