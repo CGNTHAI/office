@@ -866,7 +866,7 @@ function taskList(arr){
   if (!arr || !arr.length) return `<div class="empty">${T("기록이 없어요","ยังไม่มีข้อมูล")}</div>`;
   return `<ul class="tasks">${arr.map(t=>{const p=proj(t.p), s=STATUS[t.s]||STATUS.plan; return `<li>
     <span class="pill" style="background:${s.c}">${stLabel(t.s)}</span>
-    <span class="ko">${esc(tText(t))}</span>
+    <span class="ko">${esc(tText(t))}${LANG!=="th" && t.mt?` <small style="color:var(--ink-soft);font-size:11px">(자동번역)</small>`:""}</span>
     ${LANG!=="th" && t.th && t.th!==t.ko?`<span class="th">${esc(t.th)}</span>`:""}
     ${LANG!=="th" && t.n?`<span class="note">↳ ${esc(t.n)}</span>`:""}
     <span class="pt" style="color:${p.color}">● ${esc(p.ko)}</span></li>`;}).join("")}</ul>`;
@@ -1049,6 +1049,19 @@ function parseLine(text, st){
   });
   return out.slice(0,20);
 }
+
+/* 태국어 → 한국어 자동 번역 (구글 번역, 실패하면 태국어 그대로) */
+async function trToKo(lines){
+  if(!lines.length) return [];
+  try{
+    const q = lines.map(x=>x.replace(/\n/g," ")).join("\n");
+    const r = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=ko&dt=t&q="+encodeURIComponent(q));
+    if(!r.ok) throw 0;
+    const j = await r.json();
+    const out = (j[0]||[]).map(seg=>seg[0]||"").join("").split("\n").map(x=>x.trim());
+    return out.length===lines.length ? out : lines.map(()=>null);
+  }catch(e){ return lines.map(()=>null); }
+}
 function openEdit(id){
   const st = D.staff.find(s=>s.id===id); if(!st) return;
   const date = dates[idx], r = report(id,date);
@@ -1103,6 +1116,8 @@ function openEdit(id){
       return o ? {p, ko:o.ko||txt, th:o.th||txt, s:sv} : {p, ko:txt, th:txt, s:sv}; }).filter(Boolean).slice(0,20);
     if(!tasks.length){ f.querySelector("#efMsg").textContent=T("할 일을 하나 이상 적어 주세요","กรุณาใส่งานอย่างน้อย 1 รายการ"); return; }
     const b=f.querySelector("#efSave"); b.disabled=true; b.textContent=T("저장 중…","กำลังบันทึก…");
+    const need = tasks.filter(t=>t.ko===t.th && /[\u0E00-\u0E7F]/.test(t.th));
+    if(need.length){ const ko = await trToKo(need.map(t=>t.th)); need.forEach((t,i)=>{ if(ko[i]){ t.ko = ko[i]; t.mt = true; } }); }
     const data = {date, id, tasks, at: ffs.serverTimestamp()}; if(newCi) data.checkin = newCi;
     try{ await ffs.setDoc(ffs.doc(fdb,"office_reports",date+"_"+id), data); editId=id; openDrawer(id); }
     catch(e){ f.querySelector("#efMsg").textContent=T("저장하지 못했어요. 잠시 후 다시 해 주세요.","บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"); b.disabled=false; b.textContent=T("저장","บันทึก"); }
