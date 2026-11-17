@@ -28,7 +28,7 @@ if sys.argv[1] == "list":
         name = d["name"].rsplit("/", 1)[1]
         for i, t in enumerate(tasks_of(d)):
             th, ko = sv(t, "th"), sv(t, "ko")
-            if th and (not ko or THAI.search(ko)):
+            if th and THAI.search(th) and (not ko or ko == th):
                 pend.append({"doc": name, "i": i, "th": th})
     print(json.dumps(pend, ensure_ascii=False, indent=1))
 elif sys.argv[1] == "apply":
