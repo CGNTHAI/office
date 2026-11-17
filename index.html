@@ -74,6 +74,15 @@ html[lang=th] body{font-family:"Mali","Noto Sans Thai",var(--body)}
 .chip{background:var(--paper);border-radius:12px;padding:6px 12px;box-shadow:0 2px 0 #0002;font-size:14px;display:flex;gap:6px;align-items:baseline}
 .chip b{font-family:var(--display);font-weight:400;font-size:19px;font-variant-numeric:tabular-nums}
 .chip.alert{background:#fff1e6;border:1.5px solid #f3b27a}
+.events{display:flex;gap:8px;overflow-x:auto;padding:0 clamp(16px,3vw,32px) 12px;align-items:stretch;scrollbar-width:thin}
+.events .ttl{flex:none;align-self:center;font-size:13px;color:var(--ink-soft);margin-right:2px}
+.ev{flex:none;background:var(--paper);border-radius:12px;padding:7px 12px;box-shadow:0 2px 0 #0002;font-size:13.5px;display:flex;gap:8px;align-items:center;border:0;text-align:left;font-family:inherit;color:inherit}
+.ev .dd{font-weight:700;font-size:12px;border-radius:8px;padding:2px 7px;background:#eef3f2;color:var(--ink)}
+.ev.today .dd{background:#ff7a45;color:#fff}.ev.soon .dd{background:#ffe1cc;color:#8a3d12}
+.ev .dt{color:var(--ink-soft);font-size:12.5px}
+.ev.add{border:1px dashed #bbb;background:transparent;box-shadow:none;cursor:pointer}
+.ev.adm{cursor:pointer}
+.events:empty{display:none}
 .alerts{display:flex;flex-direction:column;gap:6px;padding:0 clamp(16px,3vw,32px) 12px}
 .alerts .row{background:#fff6ec;border-left:5px solid var(--s-moved);border-radius:10px;padding:7px 12px;font-size:14px;cursor:pointer;text-align:left;border-top:0;border-right:0;border-bottom:0}
 .alerts .row.info{border-left-color:#3f9b6a;background:#eef8f2}
@@ -298,6 +307,7 @@ body[data-sky=sunset] .street .sun{transform:translateY(40px);fill:#ff9a3c}
   </div>
 </header>
 <div class="summary" id="summary"></div>
+<div class="events" id="events"></div>
 <div class="alerts" id="alerts"></div>
 
 <section class="street" id="street" hidden></section>
@@ -806,7 +816,7 @@ function render(){
   document.getElementById("foot").textContent = T(`마지막 업데이트 ${D.updated} · 기록된 날 ${nDays}일 · 캐릭터를 누르면 자세히 볼 수 있어요`, `อัปเดตล่าสุด ${D.updated} · แตะที่ตัวละครเพื่อดูรายละเอียด`);
   const h1 = document.querySelector(".brand h1"); if (h1) h1.textContent = T("CGN Thai 오피스","CGN Thai ออฟฟิศ");
   const sub = document.querySelector(".brand small"); if (sub) sub.textContent = T("오늘 누가 무엇을 하고 있나요?","วันนี้ใครทำอะไรอยู่บ้าง?");
-  document.documentElement.lang = LANG; document.body.classList.toggle("staff", STAFF);
+  document.documentElement.lang = LANG; document.body.classList.toggle("staff", STAFF); renderEvents();
   document.querySelectorAll(".langsw button").forEach(b=>b.classList.toggle("on", b.dataset.lang===LANG));
 }
 function streetSVG(){
@@ -1108,6 +1118,52 @@ function openEdit(id){
     catch(e){ f.querySelector("#efMsg").textContent=T("저장하지 못했어요. 잠시 후 다시 해 주세요.","บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"); b.disabled=false; b.textContent=T("저장","บันทึก"); }
   };
 }
+
+/* ===== 주요 일정 (data.json events + Firebase office_events) ===== */
+let FEV = {};
+const WD_KO=["일","월","화","수","목","금","토"];
+function evDate(s){ const d=parse(s); return `${d.getUTCMonth()+1}/${d.getUTCDate()}(${T(WD_KO[d.getUTCDay()],WD_TH[d.getUTCDay()])})`; }
+function dayDiff(a,b){ return Math.round((parse(a)-parse(b))/864e5); }
+function renderEvents(){
+  const box=document.getElementById("events"); if(!box || !D) return;
+  const today=D.current;
+  const list=[...(D.events||[]).map(e=>({...e,src:"file"})), ...Object.entries(FEV).map(([k,e])=>({...e,_id:k,src:"fb"}))]
+    .filter(e=>e.date && (e.end||e.date)>=today).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,12);
+  const items=list.map(e=>{
+    const dd=dayDiff(e.date,today), on=e.date<=today && (e.end||e.date)>=today;
+    const tag= on ? T("진행 중","วันนี้") : dd===0 ? "D-day" : `D-${dd}`;
+    const cls= on||dd===0 ? "today" : dd<=7 ? "soon" : "";
+    const title = LANG==="th" ? (e.th||e.ko) : (e.ko||e.th);
+    const when = e.end && e.end!==e.date ? `${evDate(e.date)}~${evDate(e.end)}` : evDate(e.date);
+    const editable = adminUser && e.src==="fb";
+    return `<button type="button" class="ev ${cls} ${editable?"adm":""}" ${editable?`data-ev="${e._id}"`:"disabled"}><span class="dd">${tag}</span><span>${esc(title)}</span><span class="dt">${when}</span></button>`;
+  });
+  if(!items.length && !adminUser){ box.innerHTML=""; return; }
+  box.innerHTML = `<span class="ttl">📅 ${T("주요 일정","กำหนดการสำคัญ")}</span>` + (items.join("") || `<span class="dt" style="align-self:center;font-size:13px;color:var(--ink-soft)">${T("예정된 일정이 없어요","ยังไม่มีกำหนดการ")}</span>`)
+    + (adminUser && fdb ? `<button type="button" class="ev add" id="evAdd">+ ${T("일정 추가","เพิ่มกำหนดการ")}</button>` : "");
+  box.querySelectorAll(".ev.adm").forEach(b=>b.onclick=()=>openEvForm(b.dataset.ev));
+  const a=document.getElementById("evAdd"); if(a) a.onclick=()=>openEvForm(null);
+}
+function openEvForm(id){
+  const e = id ? FEV[id] : {date:D.current,end:"",ko:"",th:""};
+  admModal(`<h3>${id?"일정 수정":"일정 추가"}</h3>
+    <form id="evF"><label style="font-size:13px">시작일</label><input id="evD" type="date" required value="${esc(e.date)}">
+    <label style="font-size:13px">끝나는 날 (하루짜리면 비워 두세요)</label><input id="evE" type="date" value="${esc(e.end||"")}">
+    <input id="evK" placeholder="일정 이름 (한국어)" required value="${esc(e.ko||"")}">
+    <input id="evT" placeholder="ชื่อกำหนดการ (태국어 — 비우면 한국어로 보여요)" value="${esc(e.th||"")}">
+    <div class="row">${id?`<button type="button" id="evDel" style="margin-right:auto;color:#a33">삭제</button>`:""}<button type="button" id="evC">취소</button><button class="pri" type="submit">저장</button></div>
+    <p id="evM" style="color:#c0392b;margin:8px 0 0"></p></form>`, w=>{
+      w.querySelector("#evC").onclick=()=>w.remove();
+      const del=w.querySelector("#evDel");
+      if(del) del.onclick=async()=>{ if(del.dataset.ok!=="1"){ del.dataset.ok="1"; del.textContent="한 번 더 누르면 삭제"; return; } try{ await ffs.deleteDoc(ffs.doc(fdb,"office_events",id)); w.remove(); }catch(x){ w.querySelector("#evM").textContent="삭제하지 못했어요."; } };
+      w.querySelector("#evF").onsubmit=async ev=>{ ev.preventDefault();
+        const d=w.querySelector("#evD").value, en=w.querySelector("#evE").value, ko=w.querySelector("#evK").value.trim(), th=w.querySelector("#evT").value.trim();
+        if(en && en<d){ w.querySelector("#evM").textContent="끝나는 날이 시작일보다 빨라요."; return; }
+        const data={date:d, ko, th, at:ffs.serverTimestamp()}; if(en && en!==d) data.end=en;
+        try{ if(id) await ffs.setDoc(ffs.doc(fdb,"office_events",id),data); else await ffs.addDoc(ffs.collection(fdb,"office_events"),data); w.remove(); }
+        catch(x){ w.querySelector("#evM").textContent="저장하지 못했어요. Firebase 규칙을 확인해 주세요."; } };
+  });
+}
 /* 관리자 모드 (GitHub 페이지 전용): 장비렌탈과 같은 관리자 계정으로 로그인 */
 const FB_CONFIG={apiKey:"AIzaSyDQc14PHuYCxUjoI0-8PLYGuTrQOMVvNeQ",authDomain:"cgn-rental.firebaseapp.com",projectId:"cgn-rental",storageBucket:"cgn-rental.firebasestorage.app",messagingSenderId:"665689013167",appId:"1:665689013167:web:81cda57f43bdee74b4cd5a"};
 let fa=null, fauth=null, adminUser=null;
@@ -1136,6 +1192,7 @@ if (PUBLIC){
     ffs=fsM; fdb=ffs.getFirestore(app);
     const startSync=()=>{ if(!D){ setTimeout(startSync,300); return; } ffs.onSnapshot(ffs.collection(fdb,"office_reports"), snap=>{ STAFF_DOCS={}; snap.forEach(d=>STAFF_DOCS[d.id]=d.data()); applyStaffDocs(); }, err=>console.warn("office_reports", err.code)); };
     startSync();
+    ffs.onSnapshot(ffs.collection(fdb,"office_events"), snap=>{ FEV={}; snap.forEach(d=>FEV[d.id]=d.data()); renderEvents(); }, err=>console.warn("office_events", err.code));
     fa.onAuthStateChanged(fauth,u=>{ const was=!!adminUser; adminUser=u||null; STAFF=!adminUser;
       if(adminUser && !was) LANG="ko"; if(!adminUser && was) LANG="th";
       paintAdm(); if(D){ try{ closeDrawer(); }catch(e){} render(); tickClock(); if(window.drawLegend) drawLegend(); } });
