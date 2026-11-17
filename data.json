@@ -414,17 +414,17 @@
    "sprite": {
     "sit": {
      "src": "sprites/mild_sit.png",
-     "w": 105,
+     "w": 108,
      "h": 230
     },
     "run": {
      "src": "sprites/mild_run.png",
-     "w": 163,
+     "w": 154,
      "h": 230
     },
     "leave": {
      "src": "sprites/mild_leave.png",
-     "w": 119,
+     "w": 121,
      "h": 230
     },
     "work": {
@@ -432,27 +432,27 @@
      "frames": {
       "sit": {
        "src": "sprites/mild_w_sit.png",
-       "w": 143,
+       "w": 130,
        "h": 260
       },
       "type": {
        "src": "sprites/mild_w_type.png",
-       "w": 143,
+       "w": 130,
        "h": 260
       },
       "headphones": {
        "src": "sprites/mild_w_headphones.png",
-       "w": 143,
+       "w": 130,
        "h": 260
       },
       "point": {
        "src": "sprites/mild_w_point.png",
-       "w": 143,
+       "w": 130,
        "h": 260
       },
       "coffee": {
        "src": "sprites/mild_w_coffee.png",
-       "w": 143,
+       "w": 130,
        "h": 260
       }
      }
@@ -780,12 +780,12 @@
    "sprite": {
     "sit": {
      "src": "sprites/chat_sit.png",
-     "w": 96,
+     "w": 93,
      "h": 230
     },
     "run": {
      "src": "sprites/chat_run.png",
-     "w": 155,
+     "w": 152,
      "h": 230
     },
     "leave": {
@@ -798,27 +798,27 @@
      "frames": {
       "sit": {
        "src": "sprites/chat_w_sit.png",
-       "w": 108,
+       "w": 106,
        "h": 260
       },
       "type": {
        "src": "sprites/chat_w_type.png",
-       "w": 108,
+       "w": 106,
        "h": 260
       },
       "scroll": {
        "src": "sprites/chat_w_scroll.png",
-       "w": 108,
+       "w": 106,
        "h": 260
       },
       "proofread": {
        "src": "sprites/chat_w_proofread.png",
-       "w": 108,
+       "w": 106,
        "h": 260
       },
       "coffee": {
        "src": "sprites/chat_w_coffee.png",
-       "w": 108,
+       "w": 106,
        "h": 260
       }
      }
