@@ -324,7 +324,7 @@ const STATUS = {
 };
 const WD = ["일","월","화","수","목","금","토"];
 const WD_TH = ["อา.","จ.","อ.","พ.","พฤ.","ศ.","ส."], MON_TH = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
-const STAFF = location.hash === "#staff";
+const STAFF = location.hash === "#staff" || /github\.io$/.test(location.hostname);
 let LANG = (()=>{ try { return localStorage.getItem("cgnLang") || (STAFF ? "th" : "ko"); } catch(e){ return STAFF ? "th" : "ko"; } })();
 const T = (ko, th) => LANG === "th" ? th : ko;
 const STATUS_TH = {plan:"วางแผน", doing:"กำลังทำ", done:"เสร็จแล้ว", blocked:"ติดปัญหา", moved:"ยกไปวันถัดไป", none:"ยังไม่รายงานผล"};
