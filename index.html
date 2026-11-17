@@ -911,6 +911,7 @@ function openDrawer(id){
     ${r?.routine?.length && LANG!=="th"?`<h3>일상 업무</h3><div class="routine">${r.routine.map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
     ${prevNote}
     <h3>${T("이번 주 목표","เป้าหมายสัปดาห์นี้")} <small>${label(wk)}${T(" 주","")}</small></h3>${taskList(weekGoals(id,date))}
+    ${canEditWeek(date)?`<button class="editbtn" type="button" style="background:#5b7fd6" onclick="openEdit('${id}','week')">🎯 ${T("이번 주 목표 입력·수정","บันทึก / แก้ไขเป้าหมายสัปดาห์นี้")}</button>`:""}
     <h3>${T("지난주 결과","ผลงานสัปดาห์ที่แล้ว")} <small>${label(addDays(wk,-7))}${T(" 주","")}</small></h3>${taskList(lastWeek(id,date))}
     ${imgOf(id)?"":`<details class="custom"><summary>캐릭터 꾸미기</summary><div id="pickerWrap">${pickerHTML(id)}</div></details>`}`;
   showDrawer();
@@ -996,12 +997,14 @@ document.addEventListener("click", e=>{
 /* ===== 직원 직접 입력 (Firebase office_reports) ===== */
 let fdb=null, ffs=null, BASE=null, STAFF_DOCS={};
 const clone = o => JSON.parse(JSON.stringify(o||{}));
+function canEditWeek(date){ return PUBLIC && !!fdb && (monday(date)===monday(D.current) || !!adminUser); }
 function canEdit(date){ return PUBLIC && !!fdb && (date===D.current || !!adminUser); }
 function applyStaffDocs(){
   if(!BASE) return;
-  D.days = clone(BASE.days); D.checkin = clone(BASE.checkin);
-  Object.values(STAFF_DOCS).forEach(d=>{
+  D.days = clone(BASE.days); D.checkin = clone(BASE.checkin); D.weeks = clone(BASE.weeks);
+  Object.entries(STAFF_DOCS).forEach(([k,d])=>{
     if(!d.date || !d.id) return;
+    if(k.startsWith("week_")){ if(Array.isArray(d.tasks) && d.tasks.length) (D.weeks[d.date] ||= {})[d.id] = d.tasks; return; }
     if(Array.isArray(d.tasks) && d.tasks.length){ const old=(D.days[d.date]||{})[d.id]||{}; (D.days[d.date] ||= {})[d.id] = {...old, tasks:d.tasks, note:undefined, src:"staff"}; }
     if(d.checkin){ (D.checkin[d.date] ||= {})[d.id] = d.checkin; }
   });
@@ -1059,9 +1062,11 @@ function parseLine(text, st){
   });
   return out.slice(0,20);
 }
-function openEdit(id){
+function openEdit(id, kind){
+  const isW = kind==="week";
   const st = D.staff.find(s=>s.id===id); if(!st) return;
-  const date = dates[idx], r = report(id,date);
+  const date = isW ? monday(dates[idx]) : dates[idx], r = isW ? {tasks: weekGoals(id,dates[idx])||[]} : report(id,date);
+  const docId = (isW?"week_":"") + date + "_" + id;
   const rows = (r?.tasks||[]).map(t=>({p:t.p||"", txt:tText(t), s:t.s||"plan", orig:t}));
   if(!rows.length) rows.push({p:"",txt:"",s:"plan"});
   const ci = ((D.checkin||{})[date]||{})[id];
@@ -1070,11 +1075,11 @@ function openEdit(id){
   const rowHTML = rw => `<div class="row"><div class="sels"><select class="rp" hidden>${projOpts(rw.p)}</select><select class="rs">${stOpts(rw.s)}</select></div><button type="button" class="del" title="ลบ">✕</button><textarea class="rt" rows="2" placeholder="${T("할 일을 적어 주세요","พิมพ์งานที่จะทำ")}">${esc(rw.txt)}</textarea></div>`;
   const nowHM = () => { const n=nowBKK(); return String(n.getUTCHours()).padStart(2,"0")+":"+String(n.getUTCMinutes()).padStart(2,"0"); };
   document.getElementById("dbody").innerHTML = `
-    <div class="dhead">${avatar(st, stateOf(r), false)}<div><h2>${esc(st.name)}</h2><div class="meta">${label(date)}</div></div></div>
+    <div class="dhead">${avatar(st, stateOf(r), false)}<div><h2>${esc(st.name)}</h2><div class="meta">${isW ? `${T("이번 주 목표","เป้าหมายสัปดาห์นี้")} · ${label(date)}${T(" 주","")}` : label(date)}</div></div></div>
     <form class="ef" id="ef">
       <div class="tabs"><button type="button" data-m="bulk">📝 ${T("한번에 입력하기","พิมพ์ทีเดียว")}</button><button type="button" data-m="one">☑️ ${T("하나씩 입력하기","ใส่ทีละรายการ")}</button></div>
       <div id="mBulk">
-        <p class="hint">${T("오늘 할 일을 한꺼번에 다 적으면 자동으로 정리해서 목록으로 만들어 줘요.","พิมพ์งานวันนี้ทั้งหมดได้เลย ระบบจะจัดเป็นรายการให้อัตโนมัติครับ")}</p>
+        <p class="hint">${isW ? T("이번 주 목표를 한꺼번에 다 적으면 자동으로 정리해서 목록으로 만들어 줘요.","พิมพ์เป้าหมายสัปดาห์นี้ทั้งหมดได้เลย ระบบจะจัดเป็นรายการให้อัตโนมัติครับ") : T("오늘 할 일을 한꺼번에 다 적으면 자동으로 정리해서 목록으로 만들어 줘요.","พิมพ์งานวันนี้ทั้งหมดได้เลย ระบบจะจัดเป็นรายการให้อัตโนมัติครับ")}</p>
         <textarea class="paste" id="pasteBox" placeholder="${T("예)\n- 리빙라이프 12월 3주 편집\n- 크리스마스 그래픽 수정 ✅","เช่น\n- ตัดต่อ LF ธ.ค. W3\n- แก้กราฟิกคริสต์มาส ✅")}"></textarea>
         <button type="button" class="split" id="splitBtn">✨ ${T("목록으로 정리하기","จัดเป็นรายการ")}</button>
       </div>
@@ -1085,7 +1090,7 @@ function openEdit(id){
       </div>
       <div class="acts"><button type="button" id="efCancel">${T("취소","ยกเลิก")}</button><button type="submit" class="pri" id="efSave">${T("저장","บันทึก")}</button></div>
       <div class="msg" id="efMsg"></div>
-      ${adminUser && STAFF_DOCS[date+"_"+id]?`<button type="button" class="rm" id="efRm">관리자: 직원이 입력한 내용 지우기</button>`:""}
+      ${adminUser && STAFF_DOCS[docId]?`<button type="button" class="rm" id="efRm">관리자: 직원이 입력한 내용 지우기</button>`:""}
     </form>`;
   showDrawer();
   const f = document.getElementById("ef"); let newCi = ci || null;
@@ -1105,7 +1110,7 @@ function openEdit(id){
   f.querySelector("#efCancel").onclick = () => openDrawer(id);
   const rm = f.querySelector("#efRm");
   if(rm) rm.onclick = async () => { if(rm.dataset.ok!=="1"){ rm.dataset.ok="1"; rm.textContent="한 번 더 누르면 지워져요 (원래 보고로 돌아가요)"; return; }
-    try{ await ffs.deleteDoc(ffs.doc(fdb,"office_reports",date+"_"+id)); openDrawer(id); }catch(e){ f.querySelector("#efMsg").textContent="지우지 못했어요."; } };
+    try{ await ffs.deleteDoc(ffs.doc(fdb,"office_reports",docId)); openDrawer(id); }catch(e){ f.querySelector("#efMsg").textContent="지우지 못했어요."; } };
   f.onsubmit = async ev => { ev.preventDefault();
     const tasks = [...f.querySelectorAll("#rows .row")].map((row,i)=>{ const txt=row.querySelector(".rt").value.trim(); if(!txt) return null;
       const p=guessProj(txt) || row.querySelector(".rp").value, sv=row.querySelector(".rs").value;
@@ -1114,7 +1119,7 @@ function openEdit(id){
     if(!tasks.length){ f.querySelector("#efMsg").textContent=T("할 일을 하나 이상 적어 주세요","กรุณาใส่งานอย่างน้อย 1 รายการ"); return; }
     const b=f.querySelector("#efSave"); b.disabled=true; b.textContent=T("저장 중…","กำลังบันทึก…");
     const data = {date, id, tasks, at: ffs.serverTimestamp()}; if(newCi) data.checkin = newCi;
-    try{ await ffs.setDoc(ffs.doc(fdb,"office_reports",date+"_"+id), data); editId=id; openDrawer(id); }
+    try{ await ffs.setDoc(ffs.doc(fdb,"office_reports",docId), data); editId=id; openDrawer(id); }
     catch(e){ f.querySelector("#efMsg").textContent=T("저장하지 못했어요. 잠시 후 다시 해 주세요.","บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"); b.disabled=false; b.textContent=T("저장","บันทึก"); }
   };
 }
@@ -1210,7 +1215,7 @@ document.getElementById("next").onclick = ()=>{ if(idx<dates.length-1){idx++;ren
 fetch("data.json",{cache:"no-store"}).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); }).then(data=>{
   D = data;
   { const td = fmt(nowBKK()); if (td > D.current) D.current = td; }
-  BASE = {days: clone(D.days), checkin: clone(D.checkin)};
+  BASE = {days: clone(D.days), checkin: clone(D.checkin), weeks: clone(D.weeks)};
   dates = [...new Set([...Object.keys(D.days), D.current])].sort();
   idx = dates.indexOf(D.current);
   window.drawLegend = () => { document.getElementById("legend").innerHTML = Object.entries(STATUS).map(([k,s])=>`<span><span class="dot" style="background:${s.c}"></span>${stLabel(k)}</span>`).join("")
