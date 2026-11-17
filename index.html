@@ -1057,7 +1057,7 @@ function openEdit(id){
   const ci = ((D.checkin||{})[date]||{})[id];
   const projOpts = sel => `<option value="">${T("프로젝트 (선택)","โปรเจกต์ (ไม่บังคับ)")}</option>` + Object.entries(D.projects).map(([k,v])=>`<option value="${k}" ${k===sel?"selected":""}>${esc(T(v.ko, v.th||v.ko))}</option>`).join("");
   const stOpts = sel => ["plan","doing","done","blocked","moved"].map(k=>`<option value="${k}" ${k===sel?"selected":""}>${esc(stLabel(k))}</option>`).join("");
-  const rowHTML = rw => `<div class="row"><div class="sels"><select class="rp">${projOpts(rw.p)}</select><select class="rs">${stOpts(rw.s)}</select></div><button type="button" class="del" title="ลบ">✕</button><textarea class="rt" rows="2" placeholder="${T("할 일을 적어 주세요","พิมพ์งานที่จะทำ")}">${esc(rw.txt)}</textarea></div>`;
+  const rowHTML = rw => `<div class="row"><div class="sels"><select class="rp" hidden>${projOpts(rw.p)}</select><select class="rs">${stOpts(rw.s)}</select></div><button type="button" class="del" title="ลบ">✕</button><textarea class="rt" rows="2" placeholder="${T("할 일을 적어 주세요","พิมพ์งานที่จะทำ")}">${esc(rw.txt)}</textarea></div>`;
   const nowHM = () => { const n=nowBKK(); return String(n.getUTCHours()).padStart(2,"0")+":"+String(n.getUTCMinutes()).padStart(2,"0"); };
   document.getElementById("dbody").innerHTML = `
     <div class="dhead">${avatar(st, stateOf(r), false)}<div><h2>${esc(st.name)}</h2><div class="meta">${label(date)}</div></div></div>
@@ -1071,7 +1071,7 @@ function openEdit(id){
       <div id="mOne">
         <div id="rows">${rows.map(rowHTML).join("")}</div>
         <button type="button" class="add" id="addRow">+ ${T("할 일 추가","เพิ่มงาน")}</button>
-        <p class="hint">${T("내용·프로젝트·상태를 확인하고 저장하세요.","ตรวจสอบงาน โปรเจกต์ และสถานะ แล้วกดบันทึก")}</p>
+        <p class="hint">${T("내용과 상태를 확인하고 저장하세요.","ตรวจสอบงานและสถานะ แล้วกดบันทึก")}</p>
       </div>
       <div class="acts"><button type="button" id="efCancel">${T("취소","ยกเลิก")}</button><button type="submit" class="pri" id="efSave">${T("저장","บันทึก")}</button></div>
       <div class="msg" id="efMsg"></div>
@@ -1098,7 +1098,7 @@ function openEdit(id){
     try{ await ffs.deleteDoc(ffs.doc(fdb,"office_reports",date+"_"+id)); openDrawer(id); }catch(e){ f.querySelector("#efMsg").textContent="지우지 못했어요."; } };
   f.onsubmit = async ev => { ev.preventDefault();
     const tasks = [...f.querySelectorAll("#rows .row")].map((row,i)=>{ const txt=row.querySelector(".rt").value.trim(); if(!txt) return null;
-      const p=row.querySelector(".rp").value, sv=row.querySelector(".rs").value;
+      const p=guessProj(txt) || row.querySelector(".rp").value, sv=row.querySelector(".rs").value;
       const o = rows.find(x=>x.orig && x.txt===txt)?.orig;
       return o ? {p, ko:o.ko||txt, th:o.th||txt, s:sv} : {p, ko:txt, th:txt, s:sv}; }).filter(Boolean).slice(0,20);
     if(!tasks.length){ f.querySelector("#efMsg").textContent=T("할 일을 하나 이상 적어 주세요","กรุณาใส่งานอย่างน้อย 1 รายการ"); return; }
