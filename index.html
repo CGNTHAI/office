@@ -1013,14 +1013,14 @@ const PROJ_KW = [
   ["short",/short|ช็อต|ช๊อต|reel|รีล|숏폼/i],
   ["design",/design|ออกแบบ|กราฟิก|graphic|โปสเตอร์|poster|디자인/i],
   ["event",/event|อีเวนต์|อีเว้นท์|งานนอก|ประชุม|meeting|행사/i],
-  ["sns",/\bSNS\b|facebook|\bFB\b|youtube|\bYT\b|tiktok|ไลน์@|line@|คอมเมนต์|comment|โพสต์|post|เพจ/i],
-  ["admin",/ใบเสร็จ|บัญชี|การเงิน|รายรับ|รายจ่าย|เอกสาร|ซื้อของ|ออฟฟิศ|มูลนิธิ|admin|행정|재정/i],
+  ["sns",/\bSNS\b|facebook|\bFB\b|youtube|\bYT\b|tiktok|คอมเมนต์|comment|โพสต์|post|เพจ/i],
+  ["admin",/ไลน์@|line@|ใบเสร็จ|บัญชี|การเงิน|รายรับ|รายจ่าย|เอกสาร|ซื้อของ|ออฟฟิศ|มูลนิธิ|admin|행정|재정/i],
 ];
 const ST_KW = [
-  ["done",/✅|✔|☑|เสร็จ|เรียบร้อย|done|finish|completed|완료/i],
-  ["blocked",/❌|ติดปัญหา|ติดขัด|ไม่ได้|blocked|막힘/i],
-  ["moved",/เลื่อน|ยกไป|พรุ่งนี้|ทำต่อ|postpone|이월/i],
-  ["doing",/⏳|🔄|กำลัง|ระหว่าง|doing|in progress|진행/i],
+  ["done",/✅|✔|☑|(?<!ใบ)เสร็จ|เรียบร้อย|\bdone\b|finished|completed|완료/i],
+  ["blocked",/❌|ติดปัญหา|ติดขัด|blocked|막힘/i],
+  ["moved",/เลื่อนไป|ยกไป|postpone|이월/i],
+  ["doing",/⏳|🔄|กำลัง|ระหว่างทำ|ทำต่อ|\bdoing\b|in progress|진행/i],
 ];
 function guessProj(t){
   for(const [k,re] of PROJ_KW) if(D.projects[k] && re.test(t)) return k;
