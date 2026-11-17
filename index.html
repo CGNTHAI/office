@@ -35,6 +35,9 @@ button{font:inherit;color:inherit}
 .ef .paste{width:100%;box-sizing:border-box;border:1px solid #ddd;border-radius:10px;padding:10px;font-size:15px;font-family:inherit;min-height:110px;resize:vertical}
 .ef .split{margin-top:6px;border:0;border-radius:10px;padding:10px;width:100%;cursor:pointer;font-size:14px;background:#5b7fd6;color:#fff}
 .ef .hint{font-size:12.5px;color:var(--ink-soft);margin:4px 0 0}
+.ef .tabs{display:flex;gap:6px;background:#f4f1ec;border-radius:12px;padding:4px;margin:12px 0 4px}
+.ef .tabs button{flex:1;border:0;background:transparent;border-radius:9px;padding:9px;font-size:14px;cursor:pointer}
+.ef .tabs button.on{background:#fff;box-shadow:0 1px 3px #0002;font-weight:600}
 .ef h3{margin-top:14px}
 .ef .row{display:grid;grid-template-columns:1fr auto;gap:6px;background:#f4f1ec;border-radius:12px;padding:8px;margin-bottom:8px}
 .ef .row textarea{grid-column:1/-1;width:100%;box-sizing:border-box;border:1px solid #ddd;border-radius:8px;padding:8px;font-size:15px;font-family:inherit;resize:vertical;min-height:40px}
@@ -1058,15 +1061,17 @@ function openEdit(id){
   document.getElementById("dbody").innerHTML = `
     <div class="dhead">${avatar(st, stateOf(r), false)}<div><h2>${esc(st.name)}</h2><div class="meta">${label(date)}</div></div></div>
     <form class="ef" id="ef">
-      <h3>${T("출근","เข้างาน")}</h3>
-      <button type="button" class="ci" id="ciBtn">${ci?`✅ ${T("출근","เข้างาน")} ${esc(ci)} · ${T("다시 누르면 지금 시각으로","กดอีกครั้งเพื่อเปลี่ยนเป็นเวลาปัจจุบัน")}`:`⏰ ${T("지금 출근 체크","ลงเวลาเข้างานตอนนี้")}`}</button>
-      <h3>📋 ${T("라인 메시지 붙여넣기","วางข้อความจากไลน์")}</h3>
-      <textarea class="paste" id="pasteBox" placeholder="${T("라인에 쓰던 그대로 붙여넣으세요. 한 줄에 한 가지씩요.","วางข้อความแบบที่เขียนในไลน์ได้เลย บรรทัดละ 1 งาน")}"></textarea>
-      <button type="button" class="split" id="splitBtn">✨ ${T("할 일로 정리하기","แยกเป็นรายการงาน")}</button>
-      <p class="hint">${T("정리된 내용을 아래에서 확인하고 고친 다음 저장하세요.","ตรวจสอบ/แก้ไขรายการด้านล่าง แล้วกดบันทึก")}</p>
-      <h3>${T("오늘 할 일","งานวันนี้")}</h3>
-      <div id="rows">${rows.map(rowHTML).join("")}</div>
-      <button type="button" class="add" id="addRow">+ ${T("할 일 추가","เพิ่มงาน")}</button>
+      <div class="tabs"><button type="button" data-m="bulk">📝 ${T("한번에 입력하기","พิมพ์ทีเดียว")}</button><button type="button" data-m="one">☑️ ${T("하나씩 입력하기","ใส่ทีละรายการ")}</button></div>
+      <div id="mBulk">
+        <p class="hint">${T("오늘 할 일을 한꺼번에 다 적으면 자동으로 정리해서 목록으로 만들어 줘요.","พิมพ์งานวันนี้ทั้งหมดได้เลย ระบบจะจัดเป็นรายการให้อัตโนมัติครับ")}</p>
+        <textarea class="paste" id="pasteBox" placeholder="${T("예)\n- 리빙라이프 12월 3주 편집\n- 크리스마스 그래픽 수정 ✅","เช่น\n- ตัดต่อ LF ธ.ค. W3\n- แก้กราฟิกคริสต์มาส ✅")}"></textarea>
+        <button type="button" class="split" id="splitBtn">✨ ${T("목록으로 정리하기","จัดเป็นรายการ")}</button>
+      </div>
+      <div id="mOne">
+        <div id="rows">${rows.map(rowHTML).join("")}</div>
+        <button type="button" class="add" id="addRow">+ ${T("할 일 추가","เพิ่มงาน")}</button>
+        <p class="hint">${T("내용·프로젝트·상태를 확인하고 저장하세요.","ตรวจสอบงาน โปรเจกต์ และสถานะ แล้วกดบันทึก")}</p>
+      </div>
       <div class="acts"><button type="button" id="efCancel">${T("취소","ยกเลิก")}</button><button type="submit" class="pri" id="efSave">${T("저장","บันทึก")}</button></div>
       <div class="msg" id="efMsg"></div>
       ${adminUser && STAFF_DOCS[date+"_"+id]?`<button type="button" class="rm" id="efRm">관리자: 직원이 입력한 내용 지우기</button>`:""}
@@ -1076,15 +1081,16 @@ function openEdit(id){
   const bindDel = () => f.querySelectorAll(".del").forEach(b=>b.onclick=()=>{ b.closest(".row").remove(); });
   bindDel();
   f.querySelector("#addRow").onclick = () => { f.querySelector("#rows").insertAdjacentHTML("beforeend", rowHTML({p:"",txt:"",s:"plan"})); bindDel(); f.querySelector("#rows .row:last-child textarea").focus(); };
+  const setMode = m => { f.querySelector("#mBulk").hidden = m!=="bulk"; f.querySelector("#mOne").hidden = m!=="one"; f.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on", b.dataset.m===m)); f.querySelector("#efSave").hidden = m==="bulk"; };
+  f.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+  setMode(r?.tasks?.length ? "one" : "bulk");
   f.querySelector("#splitBtn").onclick = () => {
     const box=f.querySelector("#pasteBox"), items=parseLine(box.value, st);
     if(!items.length){ f.querySelector("#efMsg").textContent=T("정리할 내용이 없어요","ไม่พบรายการงาน"); return; }
     f.querySelectorAll("#rows .row").forEach(r=>{ if(!r.querySelector(".rt").value.trim()) r.remove(); });
     f.querySelector("#rows").insertAdjacentHTML("beforeend", items.map(rowHTML).join("")); bindDel();
-    box.value=""; f.querySelector("#efMsg").textContent="";
-    const last=f.querySelector("#rows"); last.scrollIntoView({behavior:"smooth",block:"start"});
+    box.value=""; f.querySelector("#efMsg").textContent=""; setMode("one");
   };
-  f.querySelector("#ciBtn").onclick = e => { newCi = nowHM(); e.target.textContent = `✅ ${T("출근","เข้างาน")} ${newCi}`; };
   f.querySelector("#efCancel").onclick = () => openDrawer(id);
   const rm = f.querySelector("#efRm");
   if(rm) rm.onclick = async () => { if(rm.dataset.ok!=="1"){ rm.dataset.ok="1"; rm.textContent="한 번 더 누르면 지워져요 (원래 보고로 돌아가요)"; return; }
@@ -1094,7 +1100,7 @@ function openEdit(id){
       const p=row.querySelector(".rp").value, sv=row.querySelector(".rs").value;
       const o = rows.find(x=>x.orig && x.txt===txt)?.orig;
       return o ? {p, ko:o.ko||txt, th:o.th||txt, s:sv} : {p, ko:txt, th:txt, s:sv}; }).filter(Boolean).slice(0,20);
-    if(!tasks.length && !newCi){ f.querySelector("#efMsg").textContent=T("할 일을 하나 이상 적어 주세요","กรุณาใส่งานอย่างน้อย 1 รายการ"); return; }
+    if(!tasks.length){ f.querySelector("#efMsg").textContent=T("할 일을 하나 이상 적어 주세요","กรุณาใส่งานอย่างน้อย 1 รายการ"); return; }
     const b=f.querySelector("#efSave"); b.disabled=true; b.textContent=T("저장 중…","กำลังบันทึก…");
     const data = {date, id, tasks, at: ffs.serverTimestamp()}; if(newCi) data.checkin = newCi;
     try{ await ffs.setDoc(ffs.doc(fdb,"office_reports",date+"_"+id), data); editId=id; openDrawer(id); }
