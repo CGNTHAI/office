@@ -35,7 +35,7 @@ for e in evs:
     if b < since: continue
     typ, ko, th = KIND[k]
     to = dt.date.fromisoformat(b)
-    back = to if k == "오전반차" else nextwork(to)
+    back = to if (k == "오전반차" or typ == "trip") else nextwork(to)   # 출장은 끝나는 날이 복귀일(그날 자리는 비움)
     item = {"id": sid, "from": a, "to": b, "type": typ, "ko": ko, "th": th, "back": back.isoformat(), "src": "gw"}
     if typ == "trip" and sid in old_where and old_where[sid].get("where"):
         item["where"] = old_where[sid]["where"]; item["where_th"] = old_where[sid].get("where_th", "")
