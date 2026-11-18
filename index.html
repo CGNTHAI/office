@@ -293,6 +293,25 @@ body[data-sky=night] .wallstrip{background-color:#9fb8b4}
 .resetbtn{border:1.5px solid #d9d2c6;background:#fff;border-radius:10px;padding:7px 12px;cursor:pointer;font-size:13px}
 .savenote{font-size:12.5px;color:var(--ink-soft)}
 /* ---------- street scene (commute / going home) ---------- */
+.street.is-break{background:#f6efe4}
+.chapel{position:absolute;inset:0;background:linear-gradient(#fbf3e6,#f3e4cc);}
+.chapel::after{content:"";position:absolute;left:0;right:0;bottom:0;height:62px;background:#c99a6a}
+.chapel .cross{position:absolute;left:50%;top:26px;width:46px;height:78px;margin-left:-23px}
+.chapel .cross i{position:absolute;left:19px;top:0;width:8px;height:78px;background:#8a5a34;border-radius:3px}
+.chapel .cross b{position:absolute;left:4px;top:18px;width:38px;height:8px;background:#8a5a34;border-radius:3px}
+.chapel .stained{position:absolute;top:22px;width:64px;height:96px;border-radius:32px 32px 6px 6px;border:5px solid #8a5a34;background:conic-gradient(from 45deg,#ffd166 0 25%,#7fc8f8 0 50%,#f497b6 0 75%,#9be3a8 0)}
+.chapel .stained.l{left:18%}.chapel .stained.r{right:18%}
+.chapel .pulpit{position:absolute;left:50%;top:104px;display:none;width:70px;height:46px;margin-left:-35px;background:#a8743f;border-radius:6px 6px 2px 2px;box-shadow:inset 0 6px 0 #8a5a34}
+.lunchroom{position:absolute;inset:0;background:linear-gradient(#fff4e3,#ffe7c7)}
+.lunchroom::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46px;background:#d9b48a}
+.lunchroom .menu{position:absolute;right:22px;top:16px;background:#2f2c38;color:#fff;border-radius:10px;padding:8px 14px;font-size:14px;border:4px solid #8a5a34}
+.lunchroom .ltable{position:absolute;left:4%;right:4%;bottom:58px;height:20px;background:#b5824f;border-radius:8px;display:flex;justify-content:space-around;align-items:center;font-size:20px;z-index:30;box-shadow:0 6px 0 #8a5a3455}
+.lunchroom .ltable span{transform:translateY(-14px)}
+.sitter{position:absolute;transform:translateX(-50%);border:0;background:none;padding:0;cursor:pointer;height:116px}
+.sitter img{height:100%;width:auto;display:block}
+.sitter .tag{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);background:#fff;border-radius:8px;padding:1px 7px;font-size:11.5px;white-space:nowrap;box-shadow:0 1px 0 #0002}
+.street[data-brk=worship] .sitter{height:96px}.street[data-brk=worship] .sitter[style*="bottom:112px"]{height:84px;filter:brightness(.97)}
+@media (max-width:620px){.sitter{height:84px}.street[data-brk=worship] .sitter{height:74px}.chapel .stained{display:none}}
 .street{position:relative;margin:0 clamp(8px,2vw,24px) 16px;height:300px;border-radius:26px;overflow:hidden;box-shadow:0 6px 0 #0000001f}
 .street[hidden]{display:none}
 .street svg.bg{position:absolute;inset:0;width:100%;height:100%}
@@ -751,6 +770,19 @@ function personPhase(id, date){
   const u = updMin(id, date);
   return (u!=null && u >= UPD_FROM) ? "after" : "work";
 }
+
+/* 예배·점심 시간 */
+const BRK = {
+  worship:{icon:"🙏", ko:"아침 예배", th:"นมัสการเช้า", bub_ko:"🙏 예배 중", bub_th:"🙏 นมัสการอยู่"},
+  lunch:  {icon:"🍚", ko:"점심시간", th:"พักกลางวัน", bub_ko:"🍚 점심 식사 중", bub_th:"🍚 พักทานข้าว"},
+};
+function breakOf(date){
+  if (!D || date!==D.current || phaseOf(date)!=="work") return null;
+  const m = nowMin();
+  const b = (D.hours.breaks||[]).find(x=>{ const [a1,a2]=x.from.split(":").map(Number), [b1,b2]=x.to.split(":").map(Number); return m>=a1*60+a2 && m<b1*60+b2; });
+  return b ? {...b, ...(BRK[b.id]||{icon:"⏸",ko:b.id,th:b.id,bub_ko:b.id,bub_th:b.id})} : null;
+}
+let lastBreak = null;
 let lastGone = -1;
 let lastPhase = null;
 function weekBlocked(id, date){ return (weekGoals(id,date)||[]).filter(t=>t.s==="blocked").map(t=>({...t, ko:"[주간] "+(t.ko||t.th), th:"[สัปดาห์] "+(t.th||t.ko), n:t.n, nth:t.nth})); }
@@ -816,6 +848,10 @@ function render(){
         <div class="bubble idle"><div class="txt">${msg}</div></div>${needsHelp(st.id,date) ? `<div class="helpsign"><span class="hand">🙋</span>${T("도움 필요","ขอความช่วยเหลือ")}</div>` : ""}${emptyDesk(null, deskTypeOf(st.id))}
         <div class="nameplate">${esc(st.name)} <span class="kname">${esc(st.kname||"")}</span></div></button>`;
     }
+    const brk = ph==="work" ? breakOf(date) : null;
+    if (brk) return `<button class="desk" data-id="${st.id}" aria-label="${esc(st.name)} 상세 보기">
+      <div class="bubble idle"><div class="txt">${T(brk.bub_ko, brk.bub_th)} · ${T(brk.to+"까지", "ถึง "+brk.to)}</div></div>${needsHelp(st.id,date) ? `<div class="helpsign"><span class="hand">🙋</span>${T("도움 필요","ขอความช่วยเหลือ")}</div>` : ""}${emptyDesk(null, deskTypeOf(st.id))}
+      <div class="nameplate">${esc(st.name)} <span class="kname">${esc(st.kname||"")}</span></div></button>`;
     if (ph==="weekend") return `<button class="desk trip" data-id="${st.id}" aria-label="${esc(st.name)} 주말">
       <div class="bubble idle"><div class="txt">${T("🙌 주말이에요","🙌 วันหยุดสุดสัปดาห์")}</div></div>${emptyDesk(null, deskTypeOf(st.id))}
       <div class="nameplate">${esc(st.name)} <span class="kname">${esc(st.kname||"")}</span></div></button>`;
@@ -920,9 +956,34 @@ function streetSVG(){
     <g class="bus"><rect x="0" y="236" width="230" height="56" rx="12" fill="#ffc531"/><rect x="0" y="262" width="230" height="8" fill="#e8a91a"/>${[0,1,2,3,4].map(i=>`<rect x="${14+i*40}" y="244" width="30" height="16" rx="3" fill="#cfe6f5"/>`).join("")}<circle cx="45" cy="292" r="11" fill="#2b2833"/><circle cx="185" cy="292" r="11" fill="#2b2833"/></g>
   </svg>`;
 }
+
+function renderBreak(el, date, brk){
+  const people = D.staff.filter(st=>!absence(st.id,date) && st.sprite?.sit);
+  if (brk.id==="worship") people.push({id:"dr", name:T(D.director.label, D.director.label_th||D.director.label), sprite:D.director.sprite});
+  el.hidden = false;
+  const n = people.length;
+  const rows = brk.id==="worship" ? 2 : 1;
+  const per = Math.ceil(n/rows);
+  const seats = people.map((st,i)=>{
+    const sp = st.sprite.sit; const r = Math.floor(i/per), c = i%per;
+    const x = brk.id==="worship" ? (10 + (c + 0.5 + (r===0?0.5:0))*80/(per+0.5)) : (6 + (i+0.5)*88/n);
+    const bottom = brk.id==="worship" ? (r===0 ? 112 : 12) : 30;
+    const z = 10 + r*10;
+    return `<button class="sitter" data-id="${st.id}" aria-label="${esc(st.name)}" style="left:${x.toFixed(1)}%;bottom:${bottom}px;z-index:${z}">
+      <img src="${sp.src}" alt=""><span class="tag">${esc(st.name)}</span></button>`;
+  }).join("");
+  const title = `<b>${brk.icon} ${T(brk.ko, brk.th)}</b><small>${brk.from}–${brk.to} · ${T(`${n}명`, `${n} คน`)}</small>`;
+  const bg = brk.id==="worship"
+    ? `<div class="chapel"><div class="stained l"></div><div class="cross"><i></i><b></b></div><div class="stained r"></div><div class="pulpit"></div></div>`
+    : `<div class="lunchroom"><div class="menu">${T("오늘의 점심","มื้อกลางวัน")} 🍛🍜🥗</div><div class="ltable">${"<span>🍚</span><span>🥢</span><span>🍲</span><span>🧃</span>".repeat(4)}</div></div>`;
+  el.innerHTML = bg + `<div class="title">${title}</div>` + seats;
+  el.classList.toggle("is-break", true); el.dataset.brk = brk.id;
+}
 function renderStreet(date){
   const el = document.getElementById("street");
   const ph = phaseOf(date);
+  const brk = breakOf(date);
+  if (brk){ renderBreak(el, date, brk); return; }
   if (!(ph==="before" || ph==="after")){ el.hidden = true; el.innerHTML = ""; return; }
   const checkin = (D.checkin||{})[date]||{};
   const people = D.staff.filter(st=>!absence(st.id,date) && (ph==="after" ? personPhase(st.id,date)==="after" : !checkin[st.id]));
@@ -942,6 +1003,7 @@ function renderStreet(date){
       style="--x:${(4 + i*72/Math.max(n,1)).toFixed(1)}%;--lane:${lane}px;--anim:${mode==='run'?'goRight':'goLeft'};--dur:${dur}s;--delay:${delay}s;z-index:${200-lane}">
       <div class="body"><img src="${sp.src}" alt=""></div><span class="tag">${esc(st.name)}<em>${esc(st.kname||"")}</em></span></button>`;
   }).join("");
+  el.classList.remove("is-break"); delete el.dataset.brk;
   el.innerHTML = streetSVG() + `<div class="title">${title}</div>` + walkers;
 }
 function paintBubble(c){
@@ -1050,6 +1112,9 @@ function tickClock(){
   document.body.dataset.sky = !live ? "day" : cm < 6*60 ? "night" : cm < 8*60+30 ? "dawn" : cm < 17*60+30 ? "day" : cm < 18*60+30 ? "sunset" : "night";
   const gone = ph==="after" ? D.staff.filter(x=>personPhase(x.id,D.current)==="after").length : 0;
   if (dates[idx]===D.current && ((lastPhase && ph!==lastPhase) || (lastGone>=0 && gone!==lastGone))) render();
+  const bk = live ? (breakOf(D.current)?.id || null) : null;
+  if (live && lastBreak!==undefined && bk!==lastBreak && lastPhase) render();
+  lastBreak = bk;
   lastPhase = ph; lastGone = gone;
   const toMin = t => { const [a,b]=t.split(":").map(Number); return a*60+b; };
   const cur = now.getUTCHours()*60+m, st = toMin(D.hours.start), en = toMin(D.hours.end);
@@ -1059,7 +1124,8 @@ function tickClock(){
     : cur < st ? [T("출근 전","ก่อนเข้างาน"), T(`${D.hours.start} 출근까지 ${left(st-cur)}`, `อีก ${left(st-cur)} เข้างาน ${D.hours.start}`)]
     : cur < en ? [T("근무 중","เวลางาน"), T(`${D.hours.end} 퇴근까지 ${left(en-cur)}`, `อีก ${left(en-cur)} เลิกงาน ${D.hours.end}`)]
     : [T("퇴근 후","หลังเลิกงาน"), T("퇴근 보고 확인 시간","เวลาส่งรายงานผลงาน")];
-  document.getElementById("workstate").innerHTML = `<b>${label}</b>${sub}`;
+  const bnow = breakOf(D.current);
+  document.getElementById("workstate").innerHTML = bnow ? `<b>${bnow.icon} ${T(bnow.ko, bnow.th)}</b>${T(`${bnow.to}까지`, `ถึง ${bnow.to}`)}` : `<b>${label}</b>${sub}`;
 }
 
 document.addEventListener("click", e=>{
@@ -1071,7 +1137,7 @@ document.addEventListener("click", e=>{
     return;
   }
   const d = e.target.closest("[data-id]");
-  if (d && (d.classList.contains("desk")||d.classList.contains("row")||d.classList.contains("walker"))) openDrawer(d.dataset.id);
+  if (d && (d.classList.contains("desk")||d.classList.contains("row")||d.classList.contains("walker")||d.classList.contains("sitter"))) openDrawer(d.dataset.id);
 });
 
 
