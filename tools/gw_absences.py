@@ -50,6 +50,9 @@ for a in out:
         p["to"] = max(p["to"], a["to"]); p["back"] = a["back"] if a["to"] >= p["to"] else p["back"]
     else: merged.append(dict(a))
 out = merged
+# 이틀 이상 이어지는 연차는 한국어로 '휴가'라고 표시
+for a_ in out:
+    if a_["ko"] == "연차" and a_["to"] > a_["from"]: a_["ko"] = "휴가"
 # 손으로 넣은 항목 중 그룹웨어와 같은 사람·기간이 겹치는 건 그룹웨어 쪽을 우선
 def overlap(x, y): return x["id"] == y["id"] and not (x["to"] < y["from"] or y["to"] < x["from"])
 keep = [a for a in keep if not any(overlap(a, g) for g in out)]
