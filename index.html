@@ -773,7 +773,7 @@ function render(){
       const res = has ? rr.tasks.filter(t=>!["plan","none"].includes(t.s)).length : 0, dn = has ? rr.tasks.filter(t=>t.s==="done"||t.s==="final").length : 0;
       const msg = ph==="before" ? T("🏃 출근길에 있어요","🏃 กำลังเดินทางมา") : !has ? T("👋 퇴근 · 보고 없음","👋 เลิกงาน · ไม่มีรายงาน") : res ? `${T("👋 퇴근 · 완료","👋 เลิกงาน · เสร็จ")} <b>${dn}</b>/${rr.tasks.length}` : T("👋 퇴근 · 결과 보고 전","👋 เลิกงาน · ยังไม่รายงานผล");
       return `<button class="desk" data-id="${st.id}" aria-label="${esc(st.name)} 상세 보기">
-        <div class="bubble idle"><div class="txt">${msg}</div></div>${emptyDesk(null, deskTypeOf(st.id))}
+        <div class="bubble idle"><div class="txt">${msg}</div></div>${has && rr.tasks.some(t=>t.s==="blocked") ? `<div class="helpsign"><span class="hand">🙋</span>${T("도움 필요","ขอความช่วยเหลือ")}</div>` : ""}${emptyDesk(null, deskTypeOf(st.id))}
         <div class="nameplate">${esc(st.name)} <span class="kname">${esc(st.kname||"")}</span></div></button>`;
     }
     if (ph==="weekend") return `<button class="desk trip" data-id="${st.id}" aria-label="${esc(st.name)} 주말">
