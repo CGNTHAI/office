@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CGN Thai 오피스</title>
+<title>CGN THAI 오피스</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&family=Montserrat:wght@700;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   /* layout: header card → office (wall strip + wooden floor with three team rugs) → slide-in staff drawer */
@@ -186,6 +186,7 @@ body[data-sky=night] .wallstrip{background-color:#9fb8b4}
 .equip-art{width:120px;height:78px;display:block}
 .equip-art .beam{animation:glow 2.4s ease-in-out infinite}
 .equip-go{margin-top:4px;font-size:12.5px;background:var(--ink);color:#fff;border-radius:999px;padding:4px 11px;box-shadow:0 2px 0 #0003}
+.wm{font-family:"Gotham","Gotham Rounded",Montserrat,sans-serif !important;font-weight:800;letter-spacing:.02em}
 .door{font-family:var(--display);font-size:16px;color:var(--ink-soft)}
 .seat{font-size:10px;color:#fff;background:#4d4a57;border-radius:5px;padding:0 4px;margin-right:2px}
 .kname{font-family:var(--body);font-size:12px;color:var(--ink-soft)}
@@ -336,8 +337,8 @@ body[data-sky=sunset] .street .sun{transform:translateY(40px);fill:#ff9a3c}
 <body>
 <header class="top">
   <div class="brand">
-    <div class="brand-badge">CGN</div>
-    <div><h1>CGN Thai 오피스</h1><small>오늘 누가 무엇을 하고 있나요?</small></div>
+    <div class="brand-badge wm">CGN</div>
+    <div><h1><span class="wm">CGN THAI</span> 오피스</h1><small>오늘 누가 무엇을 하고 있나요?</small></div>
   </div>
   <div class="langsw" role="group" aria-label="언어 · ภาษา"><button data-lang="ko">한국어</button><button data-lang="th">ไทย</button></div><button class="admbtn" id="admBtn" type="button" hidden>🔒</button>
   <div class="datenav" role="group" aria-label="날짜 이동">
@@ -362,7 +363,7 @@ body[data-sky=sunset] .street .sun{transform:translateY(40px);fill:#ff9a3c}
         <g class="lights" fill="#ffe08a"><rect x="17" y="48" width="3" height="3"/><rect x="40" y="42" width="3" height="3"/><rect x="44" y="52" width="3" height="3"/><rect x="90" y="46" width="3" height="3"/><rect x="118" y="36" width="3" height="3"/><rect x="122" y="48" width="3" height="3"/><rect x="66" y="58" width="3" height="3"/></g>
       </svg>
     </div>
-    <div class="sign">CGN <span>Thai</span></div>
+    <div class="sign wm">CGN <span>THAI</span></div>
     <svg class="wallclock" aria-hidden="true" viewBox="0 0 62 62">
       <circle cx="31" cy="31" r="28" fill="#fff" stroke="#2b2833" stroke-width="4"/>
       <g fill="#2b2833"><circle cx="31" cy="8" r="2"/><circle cx="54" cy="31" r="2"/><circle cx="31" cy="54" r="2"/><circle cx="8" cy="31" r="2"/></g>
@@ -886,7 +887,7 @@ function render(){
 
   const nDays = Object.keys(D.days).length;
   document.getElementById("foot").textContent = T(`마지막 업데이트 ${D.updated} · 기록된 날 ${nDays}일 · 캐릭터를 누르면 자세히 볼 수 있어요`, `อัปเดตล่าสุด ${D.updated} · แตะที่ตัวละครเพื่อดูรายละเอียด`);
-  const h1 = document.querySelector(".brand h1"); if (h1) h1.textContent = T("CGN Thai 오피스","CGN Thai ออฟฟิศ");
+  const h1 = document.querySelector(".brand h1"); if (h1) h1.innerHTML = `<span class="wm">CGN THAI</span> ${T("오피스","ออฟฟิศ")}`;
   const sub = document.querySelector(".brand small"); if (sub) sub.textContent = T("오늘 누가 무엇을 하고 있나요?","วันนี้ใครทำอะไรอยู่บ้าง?");
   document.documentElement.lang = LANG; document.body.classList.toggle("staff", STAFF); renderEvents();
   document.querySelectorAll(".langsw button").forEach(b=>b.classList.toggle("on", b.dataset.lang===LANG));
@@ -904,7 +905,7 @@ function streetSVG(){
     <path class="far" d="M0 180V110h40V80h36v30h30V70h44v110zM170 180V96h50v-20h40v104zM290 180V88h34V60h46v120zM420 180V100h60v80zM520 180V76h40v-16h36v120zM640 180V92h56v88zM730 180V70h44v110zM800 180V100h60v80zM880 180V84h50v96z" fill="#a9c3d6"/>
     <g><rect x="980" y="24" width="200" height="160" rx="6" fill="#f26b3a"/><rect x="980" y="18" width="200" height="12" rx="4" fill="#d9542a"/>${wins}
       <rect x="1050" y="150" width="60" height="34" fill="#cfe6f5" stroke="#7a3b22" stroke-width="3"/><line x1="1080" y1="150" x2="1080" y2="184" stroke="#7a3b22" stroke-width="3"/>
-      <rect x="1030" y="128" width="100" height="18" rx="4" fill="#fff"/><text x="1080" y="142" text-anchor="middle" font-family="Jua" font-size="15" fill="#f26b3a">CGN Thai</text></g>
+      <rect x="1030" y="128" width="100" height="18" rx="4" fill="#fff"/><text x="1080" y="142" text-anchor="middle" font-family="Gotham, Montserrat, sans-serif" font-weight="800" font-size="13" letter-spacing=".5" fill="#f26b3a">CGN THAI</text></g>
     ${trees}${lamps}
     <rect class="walk" y="178" width="1200" height="62" fill="#ebe3d6"/>
     <g stroke="#d8cdbd" stroke-width="2">${Array.from({length:25},(_,i)=>`<line x1="${i*50}" y1="178" x2="${i*50-12}" y2="240"/>`).join("")}</g>
