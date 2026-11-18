@@ -122,6 +122,32 @@ body[data-sky=night] .wallstrip{background-color:#9fb8b4}
 .stars circle{animation:glow 2.2s infinite}.stars circle:nth-child(2n){animation-delay:1s}
 .sign{background:var(--ink);color:#fff;font-family:var(--display);padding:8px 16px;border-radius:12px;font-size:20px;align-self:center;box-shadow:0 3px 0 #0004;flex:none}
 .sign span{color:#ffd166}
+.board{position:relative;flex:1 1 auto;min-width:0;max-width:760px;align-self:center;height:92px;margin-bottom:2px;background:#c89a64 radial-gradient(#b5854f 1px,transparent 1.4px) 0 0/7px 7px;border:6px solid #8a5a34;border-radius:8px;box-shadow:0 3px 0 #0003, inset 0 0 0 1px #0002;display:flex;align-items:center;padding:0 10px 0 8px;gap:8px}
+.board .b-title{writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--display);font-size:13px;color:#fff;background:#8a5a34;border-radius:4px;padding:6px 3px;flex:none}
+.board .b-notes{display:flex;gap:10px;align-items:center;overflow:hidden;flex:1;min-width:0;padding:6px 2px}
+.board .note{position:relative;flex:0 0 152px;height:66px;border:0;text-align:left;font-family:inherit;color:#2b2833;padding:9px 9px 6px;border-radius:2px;box-shadow:0 3px 4px #0003;transform:rotate(var(--r));cursor:pointer;display:flex;flex-direction:column;gap:2px;overflow:hidden;transition:transform .15s}
+.board .note:hover{transform:rotate(0) translateY(-2px) scale(1.03)}
+.board .note .pin{position:absolute;top:3px;left:50%;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;background:#e74c3c;box-shadow:0 1px 0 #0004}
+.board .note b{font-size:11.5px;font-weight:700;display:flex;gap:5px;align-items:center;white-space:nowrap}
+.board .note .t{font-size:12.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.board .n-notice{background:#fff3a6}
+.board .n-event{background:#fff}
+.board .n-event .dd{border-radius:6px;padding:0 5px;background:#eef3f2}
+.board .n-event.soon .dd{background:#ffe1cc;color:#8a3d12}.board .n-event.today .dd{background:#ff7a45;color:#fff}
+.board .n-event.today{background:#fff4ec}
+.board .n-more{flex:0 0 64px;min-width:64px;background:#d8f0e6;align-items:center;justify-content:center;font-weight:700;font-size:16px;text-align:center}
+.board .n-more small{font-weight:400;font-size:11px}
+.board .b-empty{color:#fff;font-size:13px;opacity:.9}
+.board .b-add{position:absolute;right:-10px;top:-10px;width:26px;height:26px;border-radius:50%;border:0;background:#2b2833;color:#fff;font-size:16px;cursor:pointer;box-shadow:0 2px 0 #0003}
+.admbox.wide{width:min(460px,92vw);max-height:80vh;overflow:auto}
+.bl-h{font-weight:700;margin:12px 0 6px;font-size:13.5px}
+.bl-row{display:flex;gap:10px;align-items:flex-start;padding:8px;border-radius:10px;background:#f7f4ef;margin-bottom:6px}
+.bl-row.ed{cursor:pointer}.bl-row.ed:hover{background:#efe9df}
+.bl-tag{flex:none;font-size:12px;font-weight:700;border-radius:7px;padding:2px 7px;background:#eef3f2}
+.bl-tag.n{background:#fff3a6}.bl-tag.soon{background:#ffe1cc;color:#8a3d12}.bl-tag.today{background:#ff7a45;color:#fff}
+.bl-t{font-size:14px;line-height:1.4;white-space:pre-wrap}.bl-d{font-size:12px;color:var(--ink-soft)}
+.bl-edit{margin-left:auto}
+@media (max-width:820px){.wallstrip{height:auto;flex-wrap:wrap;padding-top:10px;gap:14px}.board{order:9;flex-basis:100%;max-width:none}}
 .wallclock{width:62px;height:62px;flex:none;align-self:center}
 .workstate{align-self:center;background:#fff;border-radius:12px;padding:6px 12px;box-shadow:0 2px 0 #0002;font-size:13px;line-height:1.35}
 .workstate b{font-family:var(--display);font-weight:400;font-size:17px;display:block}
@@ -315,13 +341,12 @@ body[data-sky=sunset] .street .sun{transform:translateY(40px);fill:#ff9a3c}
   </div>
 </header>
 <div class="summary" id="summary"></div>
-<div class="events" id="events"></div>
 <div class="alerts" id="alerts"></div>
 
 <section class="street" id="street" hidden></section>
 <main class="office">
-  <div class="wallstrip" aria-hidden="true">
-    <div class="window">
+  <div class="wallstrip">
+    <div class="window" aria-hidden="true">
       <svg viewBox="0 0 150 84" preserveAspectRatio="none">
         <g class="stars" fill="#fff"><circle cx="18" cy="12" r="1.2"/><circle cx="44" cy="22" r="1"/><circle cx="70" cy="9" r="1.3"/><circle cx="104" cy="18" r="1"/><circle cx="128" cy="8" r="1.2"/><circle cx="138" cy="28" r="0.9"/></g>
         <circle class="sun" cx="112" cy="24" r="11" fill="#ffd34d"/>
@@ -332,7 +357,7 @@ body[data-sky=sunset] .street .sun{transform:translateY(40px);fill:#ff9a3c}
       </svg>
     </div>
     <div class="sign">CGN <span>Thai</span></div>
-    <svg class="wallclock" viewBox="0 0 62 62">
+    <svg class="wallclock" aria-hidden="true" viewBox="0 0 62 62">
       <circle cx="31" cy="31" r="28" fill="#fff" stroke="#2b2833" stroke-width="4"/>
       <g fill="#2b2833"><circle cx="31" cy="8" r="2"/><circle cx="54" cy="31" r="2"/><circle cx="31" cy="54" r="2"/><circle cx="8" cy="31" r="2"/></g>
       <line id="hh" x1="31" y1="31" x2="31" y2="18" stroke="#2b2833" stroke-width="4" stroke-linecap="round"/>
@@ -340,7 +365,8 @@ body[data-sky=sunset] .street .sun{transform:translateY(40px);fill:#ff9a3c}
       <circle cx="31" cy="31" r="3" fill="#ff7657"/>
     </svg>
     <div class="workstate" id="workstate"></div>
-    <svg class="plant" viewBox="0 0 54 96">
+    <div class="board" id="board"></div>
+    <svg class="plant" aria-hidden="true" viewBox="0 0 54 96">
       <g class="leaf" fill="#3f9b6a"><ellipse cx="17" cy="38" rx="9" ry="20" transform="rotate(-28 17 38)"/><ellipse cx="37" cy="36" rx="9" ry="21" transform="rotate(26 37 36)"/><ellipse cx="27" cy="28" rx="8" ry="22" fill="#4fb07a"/></g>
       <path d="M10 62h34l-5 32H15z" fill="#e07a52"/><rect x="8" y="58" width="38" height="8" rx="3" fill="#c8623d"/>
     </svg>
@@ -1163,45 +1189,91 @@ let FEV = {};
 const WD_KO=["일","월","화","수","목","금","토"];
 function evDate(s){ const d=parse(s); return `${d.getUTCMonth()+1}/${d.getUTCDate()}(${T(WD_KO[d.getUTCDay()],WD_TH[d.getUTCDay()])})`; }
 function dayDiff(a,b){ return Math.round((parse(a)-parse(b))/864e5); }
-function renderEvents(){
-  const box=document.getElementById("events"); if(!box || !D) return;
+function boardItems(){
   const today=D.current;
-  const list=[...(D.events||[]).map(e=>({...e,src:"file"})), ...Object.entries(FEV).map(([k,e])=>({...e,_id:k,src:"fb"}))]
-    .filter(e=>e.date && (e.end||e.date)>=today).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,12);
-  const items=list.map(e=>{
-    const dd=dayDiff(e.date,today), on=e.date<=today && (e.end||e.date)>=today;
-    const tag= on ? T("진행 중","วันนี้") : dd===0 ? "D-day" : `D-${dd}`;
-    const cls= on||dd===0 ? "today" : dd<=7 ? "soon" : "";
-    const title = LANG==="th" ? (e.th||e.ko) : (e.ko||e.th);
-    const when = (e.end && e.end!==e.date ? `${evDate(e.date)}~${evDate(e.end)}` : evDate(e.date)) + (e.time ? ` ${e.time}` : "");
-    const editable = adminUser && e.src==="fb";
-    return `<button type="button" class="ev ${cls} ${editable?"adm":""}" ${editable?`data-ev="${e._id}"`:"disabled"}><span class="dd">${tag}</span><span>${esc(title)}</span><span class="dt">${when}</span></button>`;
-  });
-  if(!items.length && !adminUser){ box.innerHTML=""; return; }
-  box.innerHTML = `<span class="ttl">📅 ${T("주요 일정","กำหนดการสำคัญ")}</span>` + (items.join("") || `<span class="dt" style="align-self:center;font-size:13px;color:var(--ink-soft)">${T("예정된 일정이 없어요","ยังไม่มีกำหนดการ")}</span>`)
-    + (adminUser && fdb ? `<button type="button" class="ev add" id="evAdd">+ ${T("일정 추가","เพิ่มกำหนดการ")}</button>` : "");
-  box.querySelectorAll(".ev.adm").forEach(b=>b.onclick=()=>openEvForm(b.dataset.ev));
-  const a=document.getElementById("evAdd"); if(a) a.onclick=()=>openEvForm(null);
+  const all=[...(D.events||[]).map(e=>({...e,src:"file"})), ...(D.notices||[]).map(e=>({...e,kind:"notice",src:"file"})), ...Object.entries(FEV).map(([k,e])=>({...e,_id:k,src:"fb"}))];
+  const notices=all.filter(e=>e.kind==="notice" && (!e.until || e.until>=today) && (!e.date || e.date<=today || true)).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const events=all.filter(e=>e.kind!=="notice" && e.date && (e.end||e.date)>=today).sort((a,b)=>a.date.localeCompare(b.date));
+  return {notices, events};
 }
-function openEvForm(id){
-  const e = id ? FEV[id] : {date:D.current,end:"",ko:"",th:""};
-  admModal(`<h3>${id?"일정 수정":"일정 추가"}</h3>
-    <form id="evF"><label style="font-size:13px">시작일</label><input id="evD" type="date" required value="${esc(e.date)}">
+const evTitle = e => LANG==="th" ? (e.th||e.ko) : (e.ko||e.th);
+function evTag(e){ const today=D.current, dd=dayDiff(e.date,today), on=e.date<=today && (e.end||e.date)>=today;
+  return { tag: on ? T("진행 중","วันนี้") : dd===0 ? "D-day" : `D-${dd}`, cls: on||dd===0 ? "today" : dd<=7 ? "soon" : "" }; }
+function evWhen(e){ return (e.end && e.end!==e.date ? `${evDate(e.date)}~${evDate(e.end)}` : evDate(e.date)) + (e.time ? ` ${e.time}` : ""); }
+function renderEvents(){
+  const box=document.getElementById("board"); if(!box || !D) return;
+  const {notices, events} = boardItems();
+  const N=notices.slice(0,2), E=events.slice(0, Math.max(1, 4-N.length)), more=notices.length+events.length-N.length-E.length;
+  const rot = i => [-2.2,1.6,-1.1,2.4,-1.8][i%5];
+  let i=0;
+  const notes = [
+    ...N.map(e=>`<button type="button" class="note n-notice" style="--r:${rot(i++)}deg" data-k="${e._id||""}"><span class="pin"></span><b>📌 ${T("공지","ประกาศ")}</b><span class="t">${esc(evTitle(e))}</span></button>`),
+    ...E.map(e=>{ const g=evTag(e); return `<button type="button" class="note n-event ${g.cls}" style="--r:${rot(i++)}deg" data-k="${e._id||""}"><span class="pin"></span><b><span class="dd">${g.tag}</span> ${evWhen(e)}</b><span class="t">${esc(evTitle(e))}</span></button>`; }),
+  ];
+  if (more>0) notes.push(`<button type="button" class="note n-more" style="--r:${rot(i++)}deg"><span class="pin"></span>+${more}<br><small>${T("더 보기","ดูเพิ่ม")}</small></button>`);
+  const empty = !notes.length ? `<span class="b-empty">${T("📋 게시판이 비어 있어요","📋 ยังไม่มีประกาศ")}</span>` : "";
+  const add = adminUser && fdb ? `<button type="button" class="b-add" id="bAdd" title="공지·일정 추가">＋</button>` : "";
+  box.innerHTML = `<div class="b-notes">${notes.join("")}${empty}</div>${add}`;
+  // 넘치는 메모는 떼어 내고 "+N"으로 모으기
+  const wrap = box.querySelector(".b-notes");
+  let extra = 0;
+  const fit = () => {
+    while (wrap.scrollWidth > wrap.clientWidth + 2) {
+      const normals = wrap.querySelectorAll(".note:not(.n-more)"); if (normals.length <= 1) break;
+      normals[normals.length-1].remove(); extra++;
+      let m = wrap.querySelector(".n-more");
+      if (!m){ wrap.insertAdjacentHTML("beforeend", `<button type="button" class="note n-more" style="--r:2deg"><span class="pin"></span>+0<br><small>${T("더 보기","ดูเพิ่ม")}</small></button>`); m = wrap.querySelector(".n-more"); }
+      m.firstChild.nextSibling.textContent = "+" + (more + extra);
+    }
+  };
+  fit();
+  box.querySelectorAll(".note").forEach(b=>b.onclick=()=>openBoardList());
+  const a=document.getElementById("bAdd"); if(a) a.onclick=e=>{ e.stopPropagation(); openEvForm(null,"pick"); };
+}
+let _bt; window.addEventListener("resize",()=>{ clearTimeout(_bt); _bt=setTimeout(()=>renderEvents(),200); });
+function openBoardList(){
+  const {notices, events} = boardItems();
+  const row = (e,isN) => { const g=isN?null:evTag(e); const ed = adminUser && e.src==="fb";
+    return `<div class="bl-row ${ed?"ed":""}" ${ed?`data-ev="${e._id}"`:""}>${isN?`<span class="bl-tag n">📌</span>`:`<span class="bl-tag ${g.cls}">${g.tag}</span>`}<div><div class="bl-t">${esc(evTitle(e))}</div><div class="bl-d">${isN ? (e.until? T(`~ ${evDate(e.until)}까지`,`ถึง ${evDate(e.until)}`) : "") : evWhen(e)}</div></div>${ed?`<span class="bl-edit">✏️</span>`:""}</div>`; };
+  admModal(`<h3>📋 ${T("게시판","บอร์ดประกาศ")}</h3>
+    ${notices.length?`<div class="bl-h">📌 ${T("공지","ประกาศ")}</div>${notices.map(e=>row(e,true)).join("")}`:""}
+    ${events.length?`<div class="bl-h">📅 ${T("주요 일정","กำหนดการสำคัญ")}</div>${events.map(e=>row(e,false)).join("")}`:""}
+    ${!notices.length&&!events.length?`<p>${T("아직 아무것도 없어요","ยังไม่มีอะไร")}</p>`:""}
+    <div class="row">${adminUser&&fdb?`<button type="button" id="blAdd" style="margin-right:auto">＋ 추가</button>`:""}<button class="pri" id="blX">${T("닫기","ปิด")}</button></div>`, w=>{
+      w.querySelector(".admbox").classList.add("wide");
+      w.querySelector("#blX").onclick=()=>w.remove();
+      const ad=w.querySelector("#blAdd"); if(ad) ad.onclick=()=>{ w.remove(); openEvForm(null,"pick"); };
+      w.querySelectorAll(".bl-row.ed").forEach(r=>r.onclick=()=>{ w.remove(); openEvForm(r.dataset.ev); });
+  });
+}
+function openEvForm(id, mode){
+  if (mode==="pick"){ admModal(`<h3>무엇을 붙일까요?</h3><div class="row" style="justify-content:stretch"><button type="button" id="pN" style="flex:1">📌 공지</button><button type="button" class="pri" id="pE" style="flex:1">📅 일정</button></div>`, w=>{
+      w.querySelector("#pN").onclick=()=>{ w.remove(); openEvForm(null,"notice"); }; w.querySelector("#pE").onclick=()=>{ w.remove(); openEvForm(null,"event"); }; }); return; }
+  const e = id ? FEV[id] : (mode==="notice" ? {kind:"notice",date:D.current,until:"",ko:"",th:""} : {date:D.current,end:"",ko:"",th:""});
+  const isN = e.kind==="notice";
+  admModal(`<h3>${isN?"📌 공지":"📅 일정"} ${id?"수정":"추가"}</h3>
+    <form id="evF">${isN ? `<textarea id="evK" required placeholder="공지 내용 (한국어)" style="width:100%;box-sizing:border-box;min-height:70px;border:1px solid #ccc;border-radius:10px;padding:10px;font:inherit;margin-bottom:8px">${esc(e.ko||"")}</textarea>
+    <textarea id="evT" placeholder="ประกาศ (태국어 — 비우면 한국어로 보여요)" style="width:100%;box-sizing:border-box;min-height:60px;border:1px solid #ccc;border-radius:10px;padding:10px;font:inherit;margin-bottom:8px">${esc(e.th||"")}</textarea>
+    <label style="font-size:13px">언제까지 붙여 둘까요? (비우면 직접 지울 때까지)</label><input id="evE" type="date" value="${esc(e.until||"")}">`
+    : `<label style="font-size:13px">시작일</label><input id="evD" type="date" required value="${esc(e.date)}">
     <label style="font-size:13px">끝나는 날 (하루짜리면 비워 두세요)</label><input id="evE" type="date" value="${esc(e.end||"")}">
     <label style="font-size:13px">시간 (선택)</label><input id="evTm" type="time" value="${esc(e.time||"")}">
     <input id="evK" placeholder="일정 이름 (한국어)" required value="${esc(e.ko||"")}">
-    <input id="evT" placeholder="ชื่อกำหนดการ (태국어 — 비우면 한국어로 보여요)" value="${esc(e.th||"")}">
+    <input id="evT" placeholder="ชื่อกำหนดการ (태국어 — 비우면 한국어로 보여요)" value="${esc(e.th||"")}">`}
     <div class="row">${id?`<button type="button" id="evDel" style="margin-right:auto;color:#a33">삭제</button>`:""}<button type="button" id="evC">취소</button><button class="pri" type="submit">저장</button></div>
     <p id="evM" style="color:#c0392b;margin:8px 0 0"></p></form>`, w=>{
       w.querySelector("#evC").onclick=()=>w.remove();
       const del=w.querySelector("#evDel");
       if(del) del.onclick=async()=>{ if(del.dataset.ok!=="1"){ del.dataset.ok="1"; del.textContent="한 번 더 누르면 삭제"; return; } try{ await ffs.deleteDoc(ffs.doc(fdb,"office_events",id)); w.remove(); }catch(x){ w.querySelector("#evM").textContent="삭제하지 못했어요."; } };
       w.querySelector("#evF").onsubmit=async ev=>{ ev.preventDefault();
-        const d=w.querySelector("#evD").value, en=w.querySelector("#evE").value, ko=w.querySelector("#evK").value.trim(), th=w.querySelector("#evT").value.trim();
-        if(en && en<d){ w.querySelector("#evM").textContent="끝나는 날이 시작일보다 빨라요."; return; }
-        const tm=w.querySelector("#evTm").value; const data={date:d, ko, th, at:ffs.serverTimestamp()}; if(en && en!==d) data.end=en; if(tm) data.time=tm;
+        const ko=w.querySelector("#evK").value.trim(), th=w.querySelector("#evT").value.trim(), en=w.querySelector("#evE").value;
+        let data;
+        if (isN){ data={kind:"notice", date:e.date||D.current, ko, th, at:ffs.serverTimestamp()}; if(en) data.until=en; }
+        else { const d=w.querySelector("#evD").value, tm=w.querySelector("#evTm").value;
+          if(en && en<d){ w.querySelector("#evM").textContent="끝나는 날이 시작일보다 빨라요."; return; }
+          data={date:d, ko, th, at:ffs.serverTimestamp()}; if(en && en!==d) data.end=en; if(tm) data.time=tm; }
         try{ if(id) await ffs.setDoc(ffs.doc(fdb,"office_events",id),data); else await ffs.addDoc(ffs.collection(fdb,"office_events"),data); w.remove(); }
-        catch(x){ w.querySelector("#evM").textContent="저장하지 못했어요. Firebase 규칙을 확인해 주세요."; } };
+        catch(x){ w.querySelector("#evM").textContent="저장하지 못했어요."; } };
   });
 }
 /* 관리자 모드 (GitHub 페이지 전용): 장비렌탈과 같은 관리자 계정으로 로그인 */
