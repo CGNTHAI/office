@@ -6,7 +6,7 @@
 <title>CGN THAI 오피스</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&family=Montserrat:wght@700;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   /* layout: header card → office (wall strip + wooden floor with three team rugs) → slide-in staff drawer */
@@ -120,8 +120,8 @@ body[data-sky=night] .desk svg{filter:brightness(.78) saturate(.9)}
 body[data-sky=night] .floor{background:#2c2a3a}
 body[data-sky=night] .wallstrip{background-color:#9fb8b4}
 .stars circle{animation:glow 2.2s infinite}.stars circle:nth-child(2n){animation-delay:1s}
-.sign{background:var(--ink);color:#fff;font-family:var(--display);padding:8px 16px;border-radius:12px;font-size:20px;align-self:center;box-shadow:0 3px 0 #0004;flex:none}
-.sign span{color:#ffd166}
+.sign{background:#f47a1a;color:#fff;font-family:var(--display);padding:8px 16px;border-radius:12px;font-size:20px;align-self:center;box-shadow:0 3px 0 #0004;flex:none}
+.sign .wm{color:#fff}
 .board{position:relative;flex:1 1 auto;min-width:0;max-width:760px;align-self:center;height:92px;margin-bottom:2px;background:#c89a64 radial-gradient(#b5854f 1px,transparent 1.4px) 0 0/7px 7px;border:6px solid #8a5a34;border-radius:8px;box-shadow:0 3px 0 #0003, inset 0 0 0 1px #0002;display:flex;align-items:center;padding:0 10px 0 8px;gap:8px}
 .board .b-title{writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--display);font-size:13px;color:#fff;background:#8a5a34;border-radius:4px;padding:6px 3px;flex:none}
 .board .b-notes{display:flex;gap:10px;align-items:center;overflow:hidden;flex:1;min-width:0;padding:6px 2px}
@@ -186,7 +186,10 @@ body[data-sky=night] .wallstrip{background-color:#9fb8b4}
 .equip-art{width:120px;height:78px;display:block}
 .equip-art .beam{animation:glow 2.4s ease-in-out infinite}
 .equip-go{margin-top:4px;font-size:12.5px;background:var(--ink);color:#fff;border-radius:999px;padding:4px 11px;box-shadow:0 2px 0 #0003}
-.wm{font-family:"Gotham","Gotham Rounded",Montserrat,sans-serif !important;font-weight:800;letter-spacing:.02em}
+.wm{display:inline-block;vertical-align:baseline;line-height:0}.wm svg{height:.72em;width:auto;display:block;overflow:visible}
+.brand-logo{width:48px;height:48px;border-radius:50%;flex:none;box-shadow:0 3px 0 #0002}
+.sign .wm svg{height:15px}
+.brand h1 .wm{margin-right:.12em}
 .door{font-family:var(--display);font-size:16px;color:var(--ink-soft)}
 .seat{font-size:10px;color:#fff;background:#4d4a57;border-radius:5px;padding:0 4px;margin-right:2px}
 .kname{font-family:var(--body);font-size:12px;color:var(--ink-soft)}
@@ -337,8 +340,8 @@ body[data-sky=sunset] .street .sun{transform:translateY(40px);fill:#ff9a3c}
 <body>
 <header class="top">
   <div class="brand">
-    <div class="brand-badge wm">CGN</div>
-    <div><h1><span class="wm">CGN THAI</span> 오피스</h1><small>오늘 누가 무엇을 하고 있나요?</small></div>
+    <img class="brand-logo" src="brand/logo-128.png" alt="CGN THAI" width="48" height="48">
+    <div><h1><span class="wm" aria-label="CGN THAI"></span> 오피스</h1><small>오늘 누가 무엇을 하고 있나요?</small></div>
   </div>
   <div class="langsw" role="group" aria-label="언어 · ภาษา"><button data-lang="ko">한국어</button><button data-lang="th">ไทย</button></div><button class="admbtn" id="admBtn" type="button" hidden>🔒</button>
   <div class="datenav" role="group" aria-label="날짜 이동">
@@ -363,7 +366,7 @@ body[data-sky=sunset] .street .sun{transform:translateY(40px);fill:#ff9a3c}
         <g class="lights" fill="#ffe08a"><rect x="17" y="48" width="3" height="3"/><rect x="40" y="42" width="3" height="3"/><rect x="44" y="52" width="3" height="3"/><rect x="90" y="46" width="3" height="3"/><rect x="118" y="36" width="3" height="3"/><rect x="122" y="48" width="3" height="3"/><rect x="66" y="58" width="3" height="3"/></g>
       </svg>
     </div>
-    <div class="sign wm">CGN <span>THAI</span></div>
+    <div class="sign"><span class="wm" aria-label="CGN THAI"></span></div>
     <svg class="wallclock" aria-hidden="true" viewBox="0 0 62 62">
       <circle cx="31" cy="31" r="28" fill="#fff" stroke="#2b2833" stroke-width="4"/>
       <g fill="#2b2833"><circle cx="31" cy="8" r="2"/><circle cx="54" cy="31" r="2"/><circle cx="31" cy="54" r="2"/><circle cx="8" cy="31" r="2"/></g>
@@ -404,6 +407,8 @@ const STATUS = {
 };
 const WD = ["일","월","화","수","목","금","토"];
 const WD_TH = ["อา.","จ.","อ.","พ.","พฤ.","ศ.","ส."], MON_TH = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+const WM_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="53 -712 5212 724" fill="currentColor" aria-hidden="true"><g transform="scale(1,-1)"><path transform="translate(0 0)" d="M699 113 601 212Q560 174 518.5 152.0Q477 130 417 130Q372 130 334.5 147.5Q297 165 270.5 195.0Q244 225 229.0 265.0Q214 305 214 350V352Q214 397 229.0 436.5Q244 476 271.0 506.0Q298 536 335.5 553.0Q373 570 417 570Q470 570 512.5 549.0Q555 528 596 491L694 604Q670 628 642.0 648.0Q614 668 581.0 682.0Q548 696 507.5 704.0Q467 712 418 712Q337 712 270.0 683.5Q203 655 155.0 605.5Q107 556 80.0 490.5Q53 425 53 350V348Q53 273 80.0 207.0Q107 141 155.0 92.5Q203 44 269.0 16.0Q335 -12 412 -12Q463 -12 504.0 -3.5Q545 5 579.5 21.5Q614 38 643.0 61.0Q672 84 699 113Z"/><path transform="translate(768 0)" d="M720 99V403H416V270H571V170Q512 128 426 128Q379 128 340.5 144.5Q302 161 273.5 191.0Q245 221 229.5 261.5Q214 302 214 350V352Q214 397 229.5 436.5Q245 476 272.5 505.5Q300 535 336.5 552.5Q373 570 415 570Q445 570 470.0 565.0Q495 560 516.5 551.0Q538 542 558.0 529.0Q578 516 598 499L695 616Q668 639 639.0 657.0Q610 675 577.0 687.0Q544 699 505.5 705.5Q467 712 420 712Q340 712 273.0 683.5Q206 655 157.0 605.5Q108 556 80.5 490.5Q53 425 53 350V348Q53 270 80.0 204.0Q107 138 155.5 90.0Q204 42 271.5 15.0Q339 -12 421 -12Q517 -12 591.5 20.5Q666 53 720 99Z"/><path transform="translate(1582 0)" d="M706 0V700H554V269L226 700H84V0H236V445L575 0Z"/><path transform="translate(2732 0)" d="M614 558V700H34V558H247V0H401V558Z"/><path transform="translate(3410 0)" d="M676 0V700H522V423H238V700H84V0H238V281H522V0Z"/><path transform="translate(4200 0)" d="M766 0 466 705H324L24 0H181L245 157H541L605 0ZM486 293H300L393 520Z"/><path transform="translate(5020 0)" d="M245 0V700H91V0Z"/></g></svg>`;
+document.querySelectorAll(".wm").forEach(e=>e.innerHTML=WM_SVG);
 const PUBLIC = /github\.io$/.test(location.hostname);
 let STAFF = location.hash === "#staff" || PUBLIC;
 let LANG = (()=>{ try { return localStorage.getItem("cgnLang") || (STAFF ? "th" : "ko"); } catch(e){ return STAFF ? "th" : "ko"; } })();
@@ -887,7 +892,7 @@ function render(){
 
   const nDays = Object.keys(D.days).length;
   document.getElementById("foot").textContent = T(`마지막 업데이트 ${D.updated} · 기록된 날 ${nDays}일 · 캐릭터를 누르면 자세히 볼 수 있어요`, `อัปเดตล่าสุด ${D.updated} · แตะที่ตัวละครเพื่อดูรายละเอียด`);
-  const h1 = document.querySelector(".brand h1"); if (h1) h1.innerHTML = `<span class="wm">CGN THAI</span> ${T("오피스","ออฟฟิศ")}`;
+  const h1 = document.querySelector(".brand h1"); if (h1) h1.innerHTML = `<span class="wm" aria-label="CGN THAI">${WM_SVG}</span> ${T("오피스","ออฟฟิศ")}`;
   const sub = document.querySelector(".brand small"); if (sub) sub.textContent = T("오늘 누가 무엇을 하고 있나요?","วันนี้ใครทำอะไรอยู่บ้าง?");
   document.documentElement.lang = LANG; document.body.classList.toggle("staff", STAFF); renderEvents();
   document.querySelectorAll(".langsw button").forEach(b=>b.classList.toggle("on", b.dataset.lang===LANG));
@@ -905,7 +910,7 @@ function streetSVG(){
     <path class="far" d="M0 180V110h40V80h36v30h30V70h44v110zM170 180V96h50v-20h40v104zM290 180V88h34V60h46v120zM420 180V100h60v80zM520 180V76h40v-16h36v120zM640 180V92h56v88zM730 180V70h44v110zM800 180V100h60v80zM880 180V84h50v96z" fill="#a9c3d6"/>
     <g><rect x="980" y="24" width="200" height="160" rx="6" fill="#f26b3a"/><rect x="980" y="18" width="200" height="12" rx="4" fill="#d9542a"/>${wins}
       <rect x="1050" y="150" width="60" height="34" fill="#cfe6f5" stroke="#7a3b22" stroke-width="3"/><line x1="1080" y1="150" x2="1080" y2="184" stroke="#7a3b22" stroke-width="3"/>
-      <rect x="1030" y="128" width="100" height="18" rx="4" fill="#fff"/><text x="1080" y="142" text-anchor="middle" font-family="Gotham, Montserrat, sans-serif" font-weight="800" font-size="13" letter-spacing=".5" fill="#f26b3a">CGN THAI</text></g>
+      <rect x="1030" y="128" width="100" height="18" rx="4" fill="#fff"/><svg x="1040" y="131" width="80" height="11" viewBox="53 -712 5212 724" preserveAspectRatio="xMidYMid meet" fill="#f26b3a"><g transform="scale(1,-1)"><path transform="translate(0 0)" d="M699 113 601 212Q560 174 518.5 152.0Q477 130 417 130Q372 130 334.5 147.5Q297 165 270.5 195.0Q244 225 229.0 265.0Q214 305 214 350V352Q214 397 229.0 436.5Q244 476 271.0 506.0Q298 536 335.5 553.0Q373 570 417 570Q470 570 512.5 549.0Q555 528 596 491L694 604Q670 628 642.0 648.0Q614 668 581.0 682.0Q548 696 507.5 704.0Q467 712 418 712Q337 712 270.0 683.5Q203 655 155.0 605.5Q107 556 80.0 490.5Q53 425 53 350V348Q53 273 80.0 207.0Q107 141 155.0 92.5Q203 44 269.0 16.0Q335 -12 412 -12Q463 -12 504.0 -3.5Q545 5 579.5 21.5Q614 38 643.0 61.0Q672 84 699 113Z"/><path transform="translate(768 0)" d="M720 99V403H416V270H571V170Q512 128 426 128Q379 128 340.5 144.5Q302 161 273.5 191.0Q245 221 229.5 261.5Q214 302 214 350V352Q214 397 229.5 436.5Q245 476 272.5 505.5Q300 535 336.5 552.5Q373 570 415 570Q445 570 470.0 565.0Q495 560 516.5 551.0Q538 542 558.0 529.0Q578 516 598 499L695 616Q668 639 639.0 657.0Q610 675 577.0 687.0Q544 699 505.5 705.5Q467 712 420 712Q340 712 273.0 683.5Q206 655 157.0 605.5Q108 556 80.5 490.5Q53 425 53 350V348Q53 270 80.0 204.0Q107 138 155.5 90.0Q204 42 271.5 15.0Q339 -12 421 -12Q517 -12 591.5 20.5Q666 53 720 99Z"/><path transform="translate(1582 0)" d="M706 0V700H554V269L226 700H84V0H236V445L575 0Z"/><path transform="translate(2732 0)" d="M614 558V700H34V558H247V0H401V558Z"/><path transform="translate(3410 0)" d="M676 0V700H522V423H238V700H84V0H238V281H522V0Z"/><path transform="translate(4200 0)" d="M766 0 466 705H324L24 0H181L245 157H541L605 0ZM486 293H300L393 520Z"/><path transform="translate(5020 0)" d="M245 0V700H91V0Z"/></g></svg></g>
     ${trees}${lamps}
     <rect class="walk" y="178" width="1200" height="62" fill="#ebe3d6"/>
     <g stroke="#d8cdbd" stroke-width="2">${Array.from({length:25},(_,i)=>`<line x1="${i*50}" y1="178" x2="${i*50-12}" y2="240"/>`).join("")}</g>
