@@ -733,7 +733,14 @@ function emptyDesk(trip, type){
     ${trip==="trip"?`<g transform="translate(96,88)"><rect x="0" y="0" width="26" height="22" rx="4" fill="#ff8a5c"/><rect x="9" y="-5" width="8" height="6" rx="2" fill="none" stroke="#c45a33" stroke-width="2"/><rect x="0" y="9" width="26" height="3" fill="#c45a33"/><circle cx="5" cy="24" r="2" fill="#4d4a57"/><circle cx="21" cy="24" r="2" fill="#4d4a57"/></g>`:""}</svg>`;
 }
 /* ---------- data helpers ---------- */
-function absence(id, date){ return (D.absences||[]).find(a=>a.id===id && date>=a.from && date<=a.to); }
+function absence(id, date){
+  return (D.absences||[]).find(a=>{
+    if (a.id!==id || date<a.from || date>a.to) return false;
+    if (a.half && date===D.current){ const m=nowMin(); return a.half==="am" ? m < 13*60+30 : m >= 12*60+30; }  // 오전 반차: 13:30까지, 오후 반차: 점심(12:30)부터
+    return true;
+  });
+}
+const showBack = a => a.type==="trip" || a.to > a.from;   // 하루짜리 연차·반차는 복귀일을 말하지 않음
 const md = s => { const d=parse(s); return `${d.getUTCMonth()+1}/${d.getUTCDate()}`; };
 function report(id, date){ return (D.days[date]||{})[id]; }
 function weekGoals(id, date){ return (D.weeks[monday(date)]||{})[id]; }
@@ -832,7 +839,7 @@ function render(){
       <div class="nameplate">${T("빈자리","ที่ว่าง")}</div><div class="role">&nbsp;</div></div>`;
     const ab = absence(st.id,date);
     if (ab) return `<button class="desk trip" data-id="${st.id}" aria-label="${esc(st.name)} ${esc(ab.ko)} 중">
-      <div class="bubble idle"><div>${ab.type==="trip"?"✈️":"🌴"} ${esc(absKo(ab))}${T(" 중","")} · <b>${T(md(ab.back)+" 복귀","กลับ "+md(ab.back))}</b></div>${absWhere(ab)?`<div style="font-size:11.5px">${esc(absWhere(ab))}</div>`:""}</div>
+      <div class="bubble idle"><div>${ab.type==="trip"?"✈️":"🌴"} ${esc(absKo(ab))}${showBack(ab)?`${T(" 중","")} · <b>${T(md(ab.back)+" 복귀","กลับ "+md(ab.back))}</b>`:""}</div>${absWhere(ab)?`<div style="font-size:11.5px">${esc(absWhere(ab))}</div>`:""}</div>
       ${emptyDesk(ab.type, deskTypeOf(st.id))}
       <div class="nameplate">${esc(st.name)} <span class="kname">${esc(st.kname||"")}</span></div></button>`;
     const r = report(st.id,date), ph = personPhase(st.id,date);
@@ -1044,7 +1051,7 @@ function openDrawer(id){
   document.getElementById("dbody").innerHTML = `
     <div class="dhead">${avatar(st, stateOf(r), false)}
       <div><h2>${esc(st.name)}</h2><div class="meta">${esc(T(team?.ko||"", team?.th||team?.ko||""))}${r?.where && LANG!=="th"?` · ${esc(r.where)}`:""}</div></div></div>
-    ${absence(id,date)?(a=>`<div class="warn" style="background:#ffeede;color:#8a3d12">${a.type==="trip"?"✈️":"🌴"} ${esc(absWhere(a))} ${esc(absKo(a))}${T(" 중","")} · ${T(md(a.back)+" 복귀 예정","กลับ "+md(a.back))}</div>`)(absence(id,date)):""}
+    ${absence(id,date)?(a=>`<div class="warn" style="background:#ffeede;color:#8a3d12">${a.type==="trip"?"✈️":"🌴"} ${esc(absWhere(a))} ${esc(absKo(a))}${showBack(a)?`${T(" 중","")} · ${T(md(a.back)+" 복귀 예정","กลับ "+md(a.back))}`:""}</div>`)(absence(id,date)):""}
     ${D.assumed?.includes(id)?`<div class="warn">이 보고가 ${esc(st.name)}의 것이 맞는지 아직 확인 전이에요.</div>`:""}
     ${r?.note && LANG!=="th"?`<div class="warn" style="background:#eef3f2;color:var(--ink-soft)">${esc(r.note)}</div>`:""}
     <h3>${T("오늘 할 일","งานวันนี้")} <small>${label(date)}</small>${r?.src==="staff"?`<span class="srcstaff">${T("직원 직접 입력","บันทึกเอง")}</span>`:""}</h3>

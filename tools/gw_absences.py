@@ -37,6 +37,7 @@ for e in evs:
     to = dt.date.fromisoformat(b)
     back = to if (k == "오전반차" or typ == "trip") else nextwork(to)   # 출장은 끝나는 날이 복귀일(그날 자리는 비움)
     item = {"id": sid, "from": a, "to": b, "type": typ, "ko": ko, "th": th, "back": back.isoformat(), "src": "gw"}
+    if k in ("오전반차", "오후반차"): item["half"] = "am" if k == "오전반차" else "pm"   # 대시보드가 시간대에 맞춰 표시
     if typ == "trip" and sid in old_where and old_where[sid].get("where"):
         item["where"] = old_where[sid]["where"]; item["where_th"] = old_where[sid].get("where_th", "")
     out.append(item)
@@ -45,7 +46,7 @@ out.sort(key=lambda a: (a["id"], a["from"]))
 merged = []
 for a in out:
     p = merged[-1] if merged else None
-    if p and p["id"] == a["id"] and p["ko"] == a["ko"] and a["from"] <= nextwork(dt.date.fromisoformat(p["to"])).isoformat():
+    if p and p["id"] == a["id"] and p["ko"] == a["ko"] and not a.get("half") and a["from"] <= nextwork(dt.date.fromisoformat(p["to"])).isoformat():
         p["to"] = max(p["to"], a["to"]); p["back"] = a["back"] if a["to"] >= p["to"] else p["back"]
     else: merged.append(dict(a))
 out = merged
