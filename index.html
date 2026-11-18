@@ -741,6 +741,8 @@ function personPhase(id, date){
 }
 let lastGone = -1;
 let lastPhase = null;
+function weekBlocked(id, date){ return (weekGoals(id,date)||[]).filter(t=>t.s==="blocked").map(t=>({...t, ko:"[주간] "+(t.ko||t.th), th:"[สัปดาห์] "+(t.th||t.ko), n:t.n, nth:t.nth})); }
+function needsHelp(id, date){ const r=report(id,date); return !!(r?.tasks?.some(t=>t.s==="blocked") || weekBlocked(id,date).length); }
 function bubbleOrder(r){
   const rank = {blocked:0, doing:1, plan:2, moved:3, done:4, final:4};
   return [...r.tasks].sort((a,b)=>(rank[a.s]??5)-(rank[b.s]??5));
@@ -790,7 +792,7 @@ function render(){
       ${emptyDesk(ab.type, deskTypeOf(st.id))}
       <div class="nameplate">${esc(st.name)} <span class="kname">${esc(st.kname||"")}</span></div></button>`;
     const r = report(st.id,date), ph = personPhase(st.id,date);
-    let state = stateOf(r); if (state==="away") state = "idle";
+    let state = stateOf(r); if (state==="away") state = "idle"; if (weekBlocked(st.id,date).length) state = "blocked";
     const arrived = ((D.checkin||{})[date]||{})[st.id];
     const mode = ph==="before" ? (arrived ? "desk" : "run") : ph==="after" ? "leave" : "desk";
     const q = D.assumed?.includes(st.id) ? `<span class="q" title="보고자 이름 확인 필요">?</span>` : "";
@@ -799,7 +801,7 @@ function render(){
       const res = has ? rr.tasks.filter(t=>!["plan","none"].includes(t.s)).length : 0, dn = has ? rr.tasks.filter(t=>t.s==="done"||t.s==="final").length : 0;
       const msg = ph==="before" ? T("🏃 출근길에 있어요","🏃 กำลังเดินทางมา") : !has ? T("👋 퇴근 · 보고 없음","👋 เลิกงาน · ไม่มีรายงาน") : res ? `${T("👋 퇴근 · 완료","👋 เลิกงาน · เสร็จ")} <b>${dn}</b>/${rr.tasks.length}` : T("👋 퇴근 · 결과 보고 전","👋 เลิกงาน · ยังไม่รายงานผล");
       return `<button class="desk" data-id="${st.id}" aria-label="${esc(st.name)} 상세 보기">
-        <div class="bubble idle"><div class="txt">${msg}</div></div>${has && rr.tasks.some(t=>t.s==="blocked") ? `<div class="helpsign"><span class="hand">🙋</span>${T("도움 필요","ขอความช่วยเหลือ")}</div>` : ""}${emptyDesk(null, deskTypeOf(st.id))}
+        <div class="bubble idle"><div class="txt">${msg}</div></div>${needsHelp(st.id,date) ? `<div class="helpsign"><span class="hand">🙋</span>${T("도움 필요","ขอความช่วยเหลือ")}</div>` : ""}${emptyDesk(null, deskTypeOf(st.id))}
         <div class="nameplate">${esc(st.name)} <span class="kname">${esc(st.kname||"")}</span></div></button>`;
     }
     if (ph==="weekend") return `<button class="desk trip" data-id="${st.id}" aria-label="${esc(st.name)} 주말">
@@ -846,13 +848,15 @@ function render(){
       b.innerHTML = res ? `<div class="txt">${T("👋 퇴근 · 완료","👋 เลิกงาน · เสร็จ")} <b>${dn}</b>/${r.tasks.length}</div>` : `<div class="txt">${T("👋 퇴근 · 결과 보고 전","👋 เลิกงาน · ยังไม่รายงานผล")}</div>`;
       return;
     }
+    const wb = weekBlocked(b.dataset.id, date);
+    if (!has && wb.length){ cyc[b.dataset.id] = {b,list:wb,i:0}; paintBubble(cyc[b.dataset.id]); return; }
     if (!has){
       b.innerHTML = mode==="run" ? `<div class="txt">${T("🏃 출근하는 중!","🏃 กำลังมาทำงาน!")}</div>`
         : b.dataset.in && date===D.current ? `<div class="txt">✅ ${b.dataset.in} ${T("출근 · 할 일 보고 전","เข้างาน · ยังไม่ส่งงานวันนี้")}</div>`
         : date<D.current ? `<div class="txt">${T("📭 이날 보고 없음","📭 วันนั้นไม่มีรายงาน")}</div>` : `<div class="txt">${T("📝 오늘 할 일 보고 전","📝 ยังไม่ส่งงานวันนี้")}</div>`;
       return;
     }
-    const list = bubbleOrder(r); cyc[b.dataset.id] = {b,list,i:0};
+    const list = [...wb, ...bubbleOrder(r)]; cyc[b.dataset.id] = {b,list,i:0};
     paintBubble(cyc[b.dataset.id]);
   });
   clearInterval(cycleTimer);
