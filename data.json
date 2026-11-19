@@ -1822,6 +1822,16 @@
       "h": 260
      }
     }
+   },
+   "car": {
+    "src": "sprites/dr_car.png",
+    "w": 426,
+    "h": 230
+   },
+   "carL": {
+    "src": "sprites/dr_car_l.png",
+    "w": 426,
+    "h": 230
    }
   },
   "desk": "director",

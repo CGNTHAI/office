@@ -327,6 +327,9 @@ body[data-sky=night] .wallstrip{background-color:#9fb8b4}
 .walker.moto .body{animation:vroom .18s linear infinite alternate}
 @keyframes vroom{to{transform:translateY(-1px)}}
 .walker.moto .tag{bottom:auto;top:-18px}
+.walker.car{height:116px}
+.walker.car .body{animation:vroom .25s linear infinite alternate}
+.walker.car .tag{bottom:auto;top:-14px}
 .walker img{height:100%;display:block}
 .walker.flip img{transform:scaleX(-1)}
 .walker .tag{position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);background:#fff;border-radius:8px;padding:0 7px;font-family:var(--display);font-size:13px;white-space:nowrap;box-shadow:0 1px 0 #0002}
@@ -931,11 +934,12 @@ function render(){
     <div class="annex">
       <div><div class="rack" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><div class="lbl">${T("서버실","ห้องเซิร์ฟเวอร์")}</div></div>
       <div class="dr">${(()=>{ const ds=dirStatus(date), bk=phaseOf(date)==="work"?breakOf(date):null;
-        const away = (ds.status==="custom" ? ds.away : ds.status!=="in") || bk;
+        const cm = dirCommuting(date);
+        const away = (ds.status==="custom" ? ds.away : ds.status!=="in") || bk || cm;
         const customTxt = ds.status==="custom" ? esc(LANG==="th" ? (ds.msg_th||ds.msg) : ds.msg) : "";
         const isPreset = ds.status==="custom" && (D.dirPresets||[]).some(p=>`${p.icon} ${p.ko}`===ds.msg);
         const lvMsg = ds.leave ? ((ds.leave.to||ds.leave.from) > ds.leave.from ? T(`🌴 휴가 중 · ${md(nextWorkday(ds.leave.to||ds.leave.from))} 복귀`,`🌴 ลาพักร้อน · กลับ ${md(nextWorkday(ds.leave.to||ds.leave.from))}`) : T("🌴 연차","🌴 ลางาน")) : "";
-        const msg = ds.status==="leave" ? lvMsg : bk ? T(bk.bub_ko, bk.bub_th) : ds.status==="custom" ? (isPreset ? customTxt : `💬 ${customTxt}`) : ds.status==="meeting" ? T(`🚗 외부 미팅 중 · ${ds.time||""}부터`,`🚗 ประชุมข้างนอก · ตั้งแต่ ${ds.time||""}`) : ds.status==="out" ? T(`👋 퇴근 · ${ds.time||""}`,`👋 กลับบ้านแล้ว · ${ds.time||""}`) : "";
+        const msg = cm ? T("🚗 출근 중","🚗 กำลังขับรถมาทำงาน") : ds.status==="leave" ? lvMsg : bk ? T(bk.bub_ko, bk.bub_th) : ds.status==="custom" ? (isPreset ? customTxt : `💬 ${customTxt}`) : ds.status==="meeting" ? T(`🚗 외부 미팅 중 · ${ds.time||""}부터`,`🚗 ประชุมข้างนอก · ตั้งแต่ ${ds.time||""}`) : ds.status==="out" ? T(`👋 퇴근 · ${ds.time||""}`,`👋 กลับบ้านแล้ว · ${ds.time||""}`) : "";
         return away ? `<button class="desk" data-id="dr" aria-label="지사장">
         <div class="bubble idle"><div class="txt">${msg}</div></div>${emptyDesk(null, deskTypeOf("dr"))}
         <div class="nameplate">` : `<button class="desk working" data-id="dr" aria-label="지사장">
@@ -1047,10 +1051,12 @@ function renderStreet(date){
   if (!(ph==="before" || ph==="after")){ el.hidden = true; el.innerHTML = ""; return; }
   const checkin = (D.checkin||{})[date]||{};
   const people = D.staff.filter(st=>!absence(st.id,date) && (ph==="after" ? personPhase(st.id,date)==="after" : (!arrivedAt(st.id,date) && !lateStart(st.id,date))));
-  if (ph==="after" && !people.length){ el.hidden = true; el.innerHTML = ""; return; }
+  const carSp = (D.director.sprite||{}).car;
+  const dirCar = carSp && (ph==="before" ? dirCommuting(date) : (date===D.current && dirStatus(date).status==="out"));
+  if (ph==="after" && !people.length && !dirCar){ el.hidden = true; el.innerHTML = ""; return; }
   const mode = ph==="before" ? "run" : "leave";
   el.hidden = false;
-  const n = people.length;
+  const n = people.length + (dirCar?1:0);
   const title = ph==="before"
     ? `<b>${T("🚶 출근길","🚶 ระหว่างทางมาทำงาน")}</b><small>${n ? T(`${n}명이 회사로 오는 중 · 08:30 출근`, `${n} คนกำลังมาที่ออฟฟิศ · เข้างาน 08:30`) : T("모두 출근 완료!","ทุกคนมาถึงแล้ว!")}</small>`
     : `<b>${T("🌆 퇴근길","🌆 ทางกลับบ้าน")}</b><small>${T(`오늘도 수고했어요 · ${n}명 퇴근`, `วันนี้เหนื่อยแล้วนะครับ · เลิกงาน ${n} คน`)}</small>`;
@@ -1070,8 +1076,11 @@ function renderStreet(date){
       style="--x:${(4 + i*72/Math.max(n,1)).toFixed(1)}%;--lane:${lane}px;--anim:${toLeft?'goLeft':'goRight'};--dur:${dur}s;--delay:${delay}s;z-index:${moto?300-lane:200-lane}">
       <div class="body"><img src="${sp.src}" alt=""></div><span class="tag">${esc(st.name)}<em>${esc(st.kname||"")}</em></span></button>`;
   }).join("");
+  const car = dirCar ? `<button class="walker car" data-id="dr" aria-label="${esc(D.director.name||"")}"
+      style="--lane:0px;--anim:${ph==="before"?"goRight":"goLeft"};--dur:10s;--delay:-7s;z-index:400">
+      <div class="body"><img src="${ph==="before" ? carSp.src : ((D.director.sprite||{}).carL||carSp).src}" alt=""></div><span class="tag">${esc(D.director.name||"")}<em>${esc(D.director.kname||"")}</em></span></button>` : "";
   el.classList.remove("is-break"); delete el.dataset.brk;
-  el.innerHTML = streetSVG() + `<div class="title">${title}</div>` + walkers;
+  el.innerHTML = streetSVG() + `<div class="title">${title}</div>` + walkers + car;
 }
 function paintBubble(c){
   const t = c.list[c.i], p = proj(t.p);
@@ -1094,6 +1103,10 @@ function taskList(arr){
 /* 지사장 상태: 출근 / 미팅 중 / 퇴근 (관리자만 변경, office_events/director_status) */
 function nextWorkday(d){ let x=addDays(d,1); while(isWkend(x)) x=addDays(x,1); return x; }
 function dirLeave(date){ return Object.entries(FEV).map(([k,e])=>({...e,_id:k})).find(e=>e.kind==="dirleave" && date>=e.from && date<=(e.to||e.from)); }
+function dirCommuting(date){
+  if (date!==D.current || phaseOf(date)!=="before" || dirLeave(date)) return false;
+  const s = FEV.director_status; return !s || s.date!==D.current;
+}
 function dirStatus(date){
   const lv = dirLeave(date); if (lv) return {status:"leave", leave:lv};
   if (date!==D.current) return {status:"in"};
