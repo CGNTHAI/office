@@ -788,6 +788,10 @@ function prevWorkday(date){ let d=addDays(date,-1); while(isWkend(d)) d=addDays(
 /* 야근 규정: 21:30 이후 퇴근 → 10:30 출근 또는 15:30 퇴근 / 22:30 → 11:30·14:30 / 23:30 → 13:30·12:30 */
 function otOf(id, date){
   const p = prevWorkday(date), m = checkoutMin(id, p) ?? updMin(id, p);
+  const pick = STAFF_DOCS[p+"_"+id]?.ot || null;          // "late" = 늦게 출근, "early" = 일찍 퇴근
+  const o = otRule(m); return o ? {...o, pick} : null;
+}
+function otRule(m){
   if (m==null) return null;
   if (m >= 23*60+30) return {in:"13:30", out:"12:30"};
   if (m >= 22*60+30) return {in:"11:30", out:"14:30"};
@@ -795,7 +799,7 @@ function otOf(id, date){
   return null;
 }
 const hm2m = t => { const [h,m]=t.split(":").map(Number); return h*60+m; };
-function lateStart(id, date){ if (date!==D.current) return null; const o=otOf(id,date); if(!o) return null; return (nowMin() < hm2m(o.in) && !report(id,date)?.tasks?.length) ? o : null; }
+function lateStart(id, date){ if (date!==D.current) return null; const o=otOf(id,date); if(!o || o.pick==="early") return null; return (nowMin() < hm2m(o.in) && !report(id,date)?.tasks?.length) ? o : null; }
 function personPhase(id, date){
   const ph=phaseOf(date);
   const co = checkoutMin(id, date);
@@ -877,7 +881,7 @@ function render(){
       const res = has ? rr.tasks.filter(t=>!["plan","none"].includes(t.s)).length : 0, dn = has ? rr.tasks.filter(t=>t.s==="done"||t.s==="final").length : 0;
       const co = checkoutMin(st.id,date), ot = otOf(st.id,date), coTxt = co!=null ? `${String(Math.floor(co/60)%24).padStart(2,"0")}:${String(co%60).padStart(2,"0")}` : "";
       const early = co!=null && co < hm2m(D.hours.end);
-      const coLabel = early && ot ? T(`🌙 야근 보상 조기 퇴근 · ${coTxt}`,`🌙 กลับก่อนชดเชย OT · ${coTxt}`) : co!=null ? T(`🏠 ${coTxt} 퇴근`,`🏠 กลับบ้าน ${coTxt}`) : "";
+      const coLabel = early && ot && ot.pick!=="late" ? T(`🌙 야근 보상 조기 퇴근 · ${coTxt}`,`🌙 กลับก่อนชดเชย OT · ${coTxt}`) : co!=null ? T(`🏠 ${coTxt} 퇴근`,`🏠 กลับบ้าน ${coTxt}`) : "";
       const msg0 = ph==="before" ? T("🏃 출근길에 있어요","🏃 กำลังเดินทางมา") : !has ? T("👋 퇴근 · 보고 없음","👋 เลิกงาน · ไม่มีรายงาน") : res ? `${T("👋 퇴근 · 완료","👋 เลิกงาน · เสร็จ")} <b>${dn}</b>/${rr.tasks.length}` : T("👋 퇴근 · 결과 보고 전","👋 เลิกงาน · ยังไม่รายงานผล");
       const msg = ph!=="before" && coLabel ? coLabel + (has ? ` · ${T("완료","เสร็จ")} <b>${dn}</b>/${rr.tasks.length}` : "") : msg0;
       return `<button class="desk" data-id="${st.id}" aria-label="${esc(st.name)} 상세 보기">
@@ -1324,6 +1328,17 @@ function openEdit(id, kind){
     const data = {date, id, tasks, at: ffs.serverTimestamp()}; if(newCi) data.checkin = newCi;
     const prevCo = STAFF_DOCS[docId]?.checkout; if (prevCo) data.checkout = prevCo;
     if (isOut){ const m = nowMin() + (night ? 24*60 : 0); data.checkout = `${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`; }
+    if (isOut){ const rule = otRule(hm2m(data.checkout));
+      if (rule){
+        const pick = await new Promise(res=>admModal(`<h3>🌙 ${T("오늘 야근 수고했어요!","วันนี้ทำงานล่วงเวลา ขอบคุณมากครับ!")}</h3>
+          <p>${T("내일은 어떻게 할까요?","พรุ่งนี้จะเลือกแบบไหนครับ?")}</p>
+          <div class="row" style="flex-direction:column;align-items:stretch">
+            <button type="button" class="pri" data-p="late">🌅 ${T(`내일 늦게 출근 · ${rule.in} 출근`,`พรุ่งนี้เข้างานสาย · เข้า ${rule.in}`)}</button>
+            <button type="button" data-p="early">🏠 ${T(`내일 일찍 퇴근 · ${rule.out} 퇴근`,`พรุ่งนี้กลับเร็ว · กลับ ${rule.out}`)}</button>
+          </div>`, w=>{ w.querySelectorAll("[data-p]").forEach(x=>x.onclick=()=>{ w.remove(); res(x.dataset.p); }); w.addEventListener("click",e=>{ if(e.target===w) res("late"); }); }));
+        data.ot = pick;
+      }
+    }
     try{ await ffs.setDoc(ffs.doc(fdb,"office_reports",docId), data); editId=id; openDrawer(id); }
     catch(e){ f.querySelector("#efMsg").textContent=T("저장하지 못했어요. 잠시 후 다시 해 주세요.","บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"); b.disabled=false; b.textContent=T("저장","บันทึก"); }
   };
