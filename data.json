@@ -184,6 +184,11 @@
        "h": 260
       }
      }
+    },
+    "walk": {
+     "src": "sprites/jay_walk.png",
+     "w": 108,
+     "h": 230
     }
    },
    "desk": "pd",
@@ -268,6 +273,11 @@
        "h": 260
       }
      }
+    },
+    "walk": {
+     "src": "sprites/aey_walk.png",
+     "w": 98,
+     "h": 230
     }
    },
    "desk": "pd",
@@ -352,6 +362,11 @@
        "h": 260
       }
      }
+    },
+    "moto": {
+     "src": "sprites/ox_moto.png",
+     "w": 248,
+     "h": 230
     }
    },
    "desk": "editor",
@@ -437,6 +452,11 @@
        "h": 260
       }
      }
+    },
+    "walk": {
+     "src": "sprites/mud_walk.png",
+     "w": 102,
+     "h": 230
     }
    },
    "desk": "sns",
@@ -521,6 +541,11 @@
        "h": 260
       }
      }
+    },
+    "walk": {
+     "src": "sprites/mild_walk.png",
+     "w": 119,
+     "h": 230
     }
    },
    "desk": "editor",
@@ -607,6 +632,11 @@
        "h": 260
       }
      }
+    },
+    "walk": {
+     "src": "sprites/hand_walk.png",
+     "w": 110,
+     "h": 230
     }
    },
    "desk": "editor",
@@ -692,6 +722,11 @@
        "h": 260
       }
      }
+    },
+    "walk": {
+     "src": "sprites/keep_walk.png",
+     "w": 104,
+     "h": 230
     }
    },
    "desk": "admin",
@@ -777,6 +812,11 @@
        "h": 260
       }
      }
+    },
+    "walk": {
+     "src": "sprites/pin_walk.png",
+     "w": 119,
+     "h": 230
     }
    },
    "desk": "admin",
@@ -862,6 +902,11 @@
        "h": 260
       }
      }
+    },
+    "walk": {
+     "src": "sprites/blue_walk.png",
+     "w": 107,
+     "h": 230
     }
    },
    "desk": "pd",
@@ -947,6 +992,11 @@
        "h": 260
       }
      }
+    },
+    "moto": {
+     "src": "sprites/chat_moto.png",
+     "w": 232,
+     "h": 230
     }
    },
    "desk": "admin",
@@ -1032,6 +1082,11 @@
        "h": 260
       }
      }
+    },
+    "moto": {
+     "src": "sprites/bee_moto.png",
+     "w": 246,
+     "h": 230
     }
    },
    "desk": "admin",
@@ -1117,6 +1172,11 @@
        "h": 260
       }
      }
+    },
+    "walk": {
+     "src": "sprites/jong_walk.png",
+     "w": 99,
+     "h": 230
     }
    },
    "desk": "news",
@@ -1202,6 +1262,11 @@
        "h": 260
       }
      }
+    },
+    "walk": {
+     "src": "sprites/name_walk.png",
+     "w": 105,
+     "h": 230
     }
    },
    "desk": "design",

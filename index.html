@@ -321,6 +321,12 @@ body[data-sky=night] .wallstrip{background-color:#9fb8b4}
 .walker{position:absolute;bottom:var(--lane);left:-10%;width:auto;height:118px;border:0;background:none;padding:0;cursor:pointer;z-index:2;animation:var(--anim) var(--dur) linear var(--delay) infinite}
 .walker .body{height:100%;animation:runb .3s ease-in-out infinite alternate}
 .walker.stroll .body{animation-duration:.6s}
+.walker.stroll .body{animation:strollb .7s ease-in-out infinite alternate}
+@keyframes strollb{to{transform:translateY(-2px)}}
+.walker.moto{height:132px}
+.walker.moto .body{animation:vroom .18s linear infinite alternate}
+@keyframes vroom{to{transform:translateY(-1px)}}
+.walker.moto .tag{bottom:auto;top:-18px}
 .walker img{height:100%;display:block}
 .walker.flip img{transform:scaleX(-1)}
 .walker .tag{position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);background:#fff;border-radius:8px;padding:0 7px;font-family:var(--display);font-size:13px;white-space:nowrap;box-shadow:0 1px 0 #0002}
@@ -1046,15 +1052,22 @@ function renderStreet(date){
   el.hidden = false;
   const n = people.length;
   const title = ph==="before"
-    ? `<b>${T("🏃 출근길","🏃 ระหว่างทางมาทำงาน")}</b><small>${n ? T(`${n}명이 회사로 오는 중 · 08:30 출근`, `${n} คนกำลังมาที่ออฟฟิศ · เข้างาน 08:30`) : T("모두 출근 완료!","ทุกคนมาถึงแล้ว!")}</small>`
+    ? `<b>${T("🚶 출근길","🚶 ระหว่างทางมาทำงาน")}</b><small>${n ? T(`${n}명이 회사로 오는 중 · 08:30 출근`, `${n} คนกำลังมาที่ออฟฟิศ · เข้างาน 08:30`) : T("모두 출근 완료!","ทุกคนมาถึงแล้ว!")}</small>`
     : `<b>${T("🌆 퇴근길","🌆 ทางกลับบ้าน")}</b><small>${T(`오늘도 수고했어요 · ${n}명 퇴근`, `วันนี้เหนื่อยแล้วนะครับ · เลิกงาน ${n} คน`)}</small>`;
+  let wi=0, mi=0;
   const walkers = people.map((st,i)=>{
-    const sp = (st.sprite||{})[mode]; if (!sp) return "";
-    const dur = (mode==="run" ? 13 : 22) + (i*7)%6;
-    const delay = -((i*dur)/Math.max(n,1)).toFixed(1);
-    const lane = [74, 96, 84, 106][i%4];
-    return `<button class="walker ${mode==='leave'?'stroll':''} ${sp.flip?'flip':''}" data-id="${st.id}" aria-label="${esc(st.name)}"
-      style="--x:${(4 + i*72/Math.max(n,1)).toFixed(1)}%;--lane:${lane}px;--anim:${mode==='run'?'goRight':'goLeft'};--dur:${dur}s;--delay:${delay}s;z-index:${200-lane}">
+    const S = st.sprite||{};
+    const moto = !!S.moto;
+    const sp = S.moto || S.walk || S[mode]; if (!sp) return "";
+    const toLeft = mode!=="run";
+    const flip = (S.moto||S.walk) ? toLeft : !!sp.flip;
+    const k = moto ? mi++ : wi++;
+    const dur = moto ? 11 + (k*5)%4 : (mode==="run" ? 30 : 34) + (k*7)%8;
+    const delay = -((k*dur)/(moto?3:Math.max(n,1))).toFixed(1);
+    const lane = moto ? [10, 2][k%2] : [74, 96, 84, 106][k%4];
+    const cls = moto ? "moto" : (S.walk ? "stroll" : (mode==='leave'?'stroll':''));
+    return `<button class="walker ${cls} ${flip?'flip':''}" data-id="${st.id}" aria-label="${esc(st.name)}"
+      style="--x:${(4 + i*72/Math.max(n,1)).toFixed(1)}%;--lane:${lane}px;--anim:${toLeft?'goLeft':'goRight'};--dur:${dur}s;--delay:${delay}s;z-index:${moto?300-lane:200-lane}">
       <div class="body"><img src="${sp.src}" alt=""></div><span class="tag">${esc(st.name)}<em>${esc(st.kname||"")}</em></span></button>`;
   }).join("");
   el.classList.remove("is-break"); delete el.dataset.brk;
