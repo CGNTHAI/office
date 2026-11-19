@@ -1093,8 +1093,8 @@ function openDrawer(id){
     ${r?.note && LANG!=="th"?`<div class="warn" style="background:#eef3f2;color:var(--ink-soft)">${esc(r.note)}</div>`:""}
     <h3>${T("오늘 할 일","งานวันนี้")} <small>${label(date)}</small>${r?.src==="staff"?`<span class="srcstaff">${T("직원 직접 입력","บันทึกเอง")}</span>`:""}</h3>
     ${r?taskList(r.tasks):`<div class="empty">${T("💤 이날은 아직 보고가 없어요","💤 ยังไม่มีรายงาน")}</div>`}
+    ${canEdit(date)?`<button class="editbtn" type="button" onclick="openEdit('${id}')">📝 ${T("오늘 업무 업데이트","อัปเดตงานวันนี้")}</button>`:""}
     ${canEdit(date) && checkoutMin(id,date)==null ? `<button class="editbtn" type="button" style="background:#f47a1a" onclick="openEdit('${id}','out')">🏠 ${T("퇴근하기","กลับบ้าน")}</button>` : ""}
-    ${canEdit(date)?`<button class="editbtn" type="button" onclick="openEdit('${id}')">✏️ ${T("오늘 업무 입력·수정","บันทึก / แก้ไขงานวันนี้")}</button>`:""}
     ${r?.routine?.length && LANG!=="th"?`<h3>일상 업무</h3><div class="routine">${r.routine.map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
     ${prevNote}
     <h3>${T("이번 주 목표","เป้าหมายสัปดาห์นี้")} <small>${label(wk)}${T(" 주","")}</small></h3>${taskList(weekGoals(id,date))}
