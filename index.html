@@ -781,10 +781,26 @@ function arrivedAt(id, date){
   const r = report(id, date); if (r && r.tasks && r.tasks.length) return "✓";
   return null;
 }
+/* 퇴근 버튼으로 기록한 퇴근 시각(분). 자정 넘어 퇴근하면 24:30처럼 24시 이상으로 저장 */
+function checkoutMin(id, date){ const d=STAFF_DOCS[date+"_"+id]; if(!d || !d.checkout) return null; const [h,m]=d.checkout.split(":").map(Number); return h*60+m; }
+function isWkend(date){ const g=parse(date).getUTCDay(); return g===0||g===6; }
+function prevWorkday(date){ let d=addDays(date,-1); while(isWkend(d)) d=addDays(d,-1); return d; }
+/* 야근 규정: 21:30 이후 퇴근 → 10:30 출근 또는 15:30 퇴근 / 22:30 → 11:30·14:30 / 23:30 → 13:30·12:30 */
+function otOf(id, date){
+  const p = prevWorkday(date), m = checkoutMin(id, p) ?? updMin(id, p);
+  if (m==null) return null;
+  if (m >= 23*60+30) return {in:"13:30", out:"12:30"};
+  if (m >= 22*60+30) return {in:"11:30", out:"14:30"};
+  if (m >= 21*60+30) return {in:"10:30", out:"15:30"};
+  return null;
+}
+const hm2m = t => { const [h,m]=t.split(":").map(Number); return h*60+m; };
+function lateStart(id, date){ if (date!==D.current) return null; const o=otOf(id,date); if(!o) return null; return (nowMin() < hm2m(o.in) && !report(id,date)?.tasks?.length) ? o : null; }
 function personPhase(id, date){
-  const ph=phaseOf(date); if(ph!=="after") return ph;
-  const u = updMin(id, date);
-  return (u!=null && u >= UPD_FROM) ? "after" : "work";
+  const ph=phaseOf(date);
+  const co = checkoutMin(id, date);
+  if (co!=null && (ph==="work" || ph==="after") && (date!==D.current || nowMin() >= co || co >= 24*60)) return "after";
+  return ph==="after" ? "work" : ph;   // 퇴근 버튼을 누른 사람만 퇴근 모드 (야근하는 사람은 계속 자리에)
 }
 
 /* 예배·점심 시간 */
@@ -856,14 +872,22 @@ function render(){
     const arrived = arrivedAt(st.id, date);
     const mode = ph==="before" ? (arrived ? "desk" : "run") : ph==="after" ? "leave" : "desk";
     const q = D.assumed?.includes(st.id) ? `<span class="q" title="보고자 이름 확인 필요">?</span>` : "";
-    if ((ph==="before" && !arrived) || ph==="after"){
+    if (((ph==="before" && !arrived) || ph==="after") && !(ph==="before" && lateStart(st.id,date))){
       const rr = report(st.id,date), has = rr && rr.tasks?.length;
       const res = has ? rr.tasks.filter(t=>!["plan","none"].includes(t.s)).length : 0, dn = has ? rr.tasks.filter(t=>t.s==="done"||t.s==="final").length : 0;
-      const msg = ph==="before" ? T("🏃 출근길에 있어요","🏃 กำลังเดินทางมา") : !has ? T("👋 퇴근 · 보고 없음","👋 เลิกงาน · ไม่มีรายงาน") : res ? `${T("👋 퇴근 · 완료","👋 เลิกงาน · เสร็จ")} <b>${dn}</b>/${rr.tasks.length}` : T("👋 퇴근 · 결과 보고 전","👋 เลิกงาน · ยังไม่รายงานผล");
+      const co = checkoutMin(st.id,date), ot = otOf(st.id,date), coTxt = co!=null ? `${String(Math.floor(co/60)%24).padStart(2,"0")}:${String(co%60).padStart(2,"0")}` : "";
+      const early = co!=null && co < hm2m(D.hours.end);
+      const coLabel = early && ot ? T(`🌙 야근 보상 조기 퇴근 · ${coTxt}`,`🌙 กลับก่อนชดเชย OT · ${coTxt}`) : co!=null ? T(`🏠 ${coTxt} 퇴근`,`🏠 กลับบ้าน ${coTxt}`) : "";
+      const msg0 = ph==="before" ? T("🏃 출근길에 있어요","🏃 กำลังเดินทางมา") : !has ? T("👋 퇴근 · 보고 없음","👋 เลิกงาน · ไม่มีรายงาน") : res ? `${T("👋 퇴근 · 완료","👋 เลิกงาน · เสร็จ")} <b>${dn}</b>/${rr.tasks.length}` : T("👋 퇴근 · 결과 보고 전","👋 เลิกงาน · ยังไม่รายงานผล");
+      const msg = ph!=="before" && coLabel ? coLabel + (has ? ` · ${T("완료","เสร็จ")} <b>${dn}</b>/${rr.tasks.length}` : "") : msg0;
       return `<button class="desk" data-id="${st.id}" aria-label="${esc(st.name)} 상세 보기">
         <div class="bubble idle"><div class="txt">${msg}</div></div>${needsHelp(st.id,date) ? `<div class="helpsign"><span class="hand">🙋</span>${T("도움 필요","ขอความช่วยเหลือ")}</div>` : ""}${emptyDesk(null, deskTypeOf(st.id))}
         <div class="nameplate">${esc(st.name)} <span class="kname">${esc(st.kname||"")}</span></div></button>`;
     }
+    const late = (ph==="before" || ph==="work") ? lateStart(st.id,date) : null;
+    if (late) return `<button class="desk" data-id="${st.id}" aria-label="${esc(st.name)} 상세 보기">
+      <div class="bubble idle"><div class="txt">${T(`🌙 야근 후 늦은 출근 · ${late.in} 출근`,`🌙 เข้างานสายหลัง OT · เข้า ${late.in}`)}</div></div>${emptyDesk(null, deskTypeOf(st.id))}
+      <div class="nameplate">${esc(st.name)} <span class="kname">${esc(st.kname||"")}</span></div></button>`;
     const brk = ph==="work" ? breakOf(date) : null;
     if (brk) return `<button class="desk" data-id="${st.id}" aria-label="${esc(st.name)} 상세 보기">
       <div class="bubble idle"><div class="txt">${T(brk.bub_ko, brk.bub_th)} · ${T(brk.to+"까지", "ถึง "+brk.to)}</div></div>${needsHelp(st.id,date) ? `<div class="helpsign"><span class="hand">🙋</span>${T("도움 필요","ขอความช่วยเหลือ")}</div>` : ""}${emptyDesk(null, deskTypeOf(st.id))}
@@ -974,7 +998,7 @@ function streetSVG(){
 }
 
 function renderBreak(el, date, brk){
-  const people = D.staff.filter(st=>!absence(st.id,date) && st.sprite?.sit);
+  const people = D.staff.filter(st=>!absence(st.id,date) && st.sprite?.sit && !lateStart(st.id,date) && personPhase(st.id,date)!=="after");
   if (brk.id==="worship") people.push({id:"dr", name:T(D.director.label, D.director.label_th||D.director.label), sprite:D.director.sprite});
   el.hidden = false;
   const n = people.length;
@@ -1002,7 +1026,7 @@ function renderStreet(date){
   if (brk){ renderBreak(el, date, brk); return; }
   if (!(ph==="before" || ph==="after")){ el.hidden = true; el.innerHTML = ""; return; }
   const checkin = (D.checkin||{})[date]||{};
-  const people = D.staff.filter(st=>!absence(st.id,date) && (ph==="after" ? personPhase(st.id,date)==="after" : !arrivedAt(st.id,date)));
+  const people = D.staff.filter(st=>!absence(st.id,date) && (ph==="after" ? personPhase(st.id,date)==="after" : (!arrivedAt(st.id,date) && !lateStart(st.id,date))));
   if (ph==="after" && !people.length){ el.hidden = true; el.innerHTML = ""; return; }
   const mode = ph==="before" ? "run" : "leave";
   el.hidden = false;
@@ -1065,6 +1089,7 @@ function openDrawer(id){
     ${r?.note && LANG!=="th"?`<div class="warn" style="background:#eef3f2;color:var(--ink-soft)">${esc(r.note)}</div>`:""}
     <h3>${T("오늘 할 일","งานวันนี้")} <small>${label(date)}</small>${r?.src==="staff"?`<span class="srcstaff">${T("직원 직접 입력","บันทึกเอง")}</span>`:""}</h3>
     ${r?taskList(r.tasks):`<div class="empty">${T("💤 이날은 아직 보고가 없어요","💤 ยังไม่มีรายงาน")}</div>`}
+    ${canEdit(date) && checkoutMin(id,date)==null ? `<button class="editbtn" type="button" style="background:#f47a1a" onclick="openEdit('${id}','out')">🏠 ${T("퇴근하기","กลับบ้าน")}</button>` : ""}
     ${canEdit(date)?`<button class="editbtn" type="button" onclick="openEdit('${id}')">✏️ ${T("오늘 업무 입력·수정","บันทึก / แก้ไขงานวันนี้")}</button>`:""}
     ${r?.routine?.length && LANG!=="th"?`<h3>일상 업무</h3><div class="routine">${r.routine.map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
     ${prevNote}
@@ -1238,7 +1263,9 @@ function parseLine(text, st){
 function openEdit(id, kind){
   const isW = kind==="week";
   const st = D.staff.find(s=>s.id===id); if(!st) return;
-  const date = isW ? monday(dates[idx]) : dates[idx], r = isW ? {tasks: weekGoals(id,dates[idx])||[]} : report(id,date);
+  const isOut = kind==="out";
+  const night = isOut && nowMin() < 5*60;               // 자정 넘어 퇴근: 전날 업무로 기록
+  const date = isW ? monday(dates[idx]) : night ? addDays(D.current,-1) : dates[idx], r = isW ? {tasks: weekGoals(id,dates[idx])||[]} : report(id,date);
   const docId = (isW?"week_":"") + date + "_" + id;
   const rows = (r?.tasks||[]).map(t=>({p:t.p||"", txt:tText(t), s:t.s||"plan", note:noteText(t), orig:t}));
   if(!rows.length) rows.push({p:"",txt:"",s:"plan"});
@@ -1261,7 +1288,7 @@ function openEdit(id, kind){
         <button type="button" class="add" id="addRow">+ ${T("할 일 추가","เพิ่มงาน")}</button>
         <p class="hint">${T("내용과 상태를 확인하고 저장하세요.","ตรวจสอบงานและสถานะ แล้วกดบันทึก")}</p>
       </div>
-      <div class="acts"><button type="button" id="efCancel">${T("취소","ยกเลิก")}</button><button type="submit" class="pri" id="efSave">${T("저장","บันทึก")}</button></div>
+      <div class="acts"><button type="button" id="efCancel">${T("취소","ยกเลิก")}</button><button type="submit" class="pri" id="efSave">${isOut ? T("🏠 퇴근","🏠 กลับบ้าน") : T("저장","บันทึก")}</button></div>${isOut?`<p class="hint">${T("오늘 한 일의 상태를 정리하고 퇴근을 누르세요.","อัปเดตสถานะงานวันนี้ แล้วกด กลับบ้าน")}</p>`:""}
       <div class="msg" id="efMsg"></div>
       ${adminUser && STAFF_DOCS[docId]?`<button type="button" class="rm" id="efRm">관리자: 직원이 입력한 내용 지우기</button>`:""}
     </form>`;
@@ -1272,7 +1299,7 @@ function openEdit(id, kind){
   f.querySelector("#addRow").onclick = () => { f.querySelector("#rows").insertAdjacentHTML("beforeend", rowHTML({p:"",txt:"",s:"plan"})); bindDel(); f.querySelector("#rows .row:last-child textarea").focus(); };
   const setMode = m => { f.querySelector("#mBulk").hidden = m!=="bulk"; f.querySelector("#mOne").hidden = m!=="one"; f.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on", b.dataset.m===m)); f.querySelector("#efSave").hidden = m==="bulk"; };
   f.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>setMode(b.dataset.m));
-  setMode(r?.tasks?.length ? "one" : "bulk");
+  setMode(r?.tasks?.length || isOut ? "one" : "bulk");
   f.querySelector("#splitBtn").onclick = () => {
     const box=f.querySelector("#pasteBox"), items=parseLine(box.value, st);
     if(!items.length){ f.querySelector("#efMsg").textContent=T("정리할 내용이 없어요","ไม่พบรายการงาน"); return; }
@@ -1292,9 +1319,11 @@ function openEdit(id, kind){
       const nt = sv==="plan" ? "" : row.querySelector(".rn").value.trim();
       if (nt){ if (o && nt===noteText(o)) { if(o.n) t.n=o.n; if(o.nth) t.nth=o.nth; } else { t.nth=nt; t.n=nt; } } else if (o && o.n && !o.nth && sv!=="plan" && LANG==="th") t.n=o.n;
       return t; }).filter(Boolean).slice(0,20);
-    if(!tasks.length){ f.querySelector("#efMsg").textContent=T("할 일을 하나 이상 적어 주세요","กรุณาใส่งานอย่างน้อย 1 รายการ"); return; }
+    if(!tasks.length && !isOut){ f.querySelector("#efMsg").textContent=T("할 일을 하나 이상 적어 주세요","กรุณาใส่งานอย่างน้อย 1 รายการ"); return; }
     const b=f.querySelector("#efSave"); b.disabled=true; b.textContent=T("저장 중…","กำลังบันทึก…");
     const data = {date, id, tasks, at: ffs.serverTimestamp()}; if(newCi) data.checkin = newCi;
+    const prevCo = STAFF_DOCS[docId]?.checkout; if (prevCo) data.checkout = prevCo;
+    if (isOut){ const m = nowMin() + (night ? 24*60 : 0); data.checkout = `${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`; }
     try{ await ffs.setDoc(ffs.doc(fdb,"office_reports",docId), data); editId=id; openDrawer(id); }
     catch(e){ f.querySelector("#efMsg").textContent=T("저장하지 못했어요. 잠시 후 다시 해 주세요.","บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"); b.disabled=false; b.textContent=T("저장","บันทึก"); }
   };
