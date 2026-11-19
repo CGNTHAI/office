@@ -1043,16 +1043,19 @@ function renderBreak(el, date, brk){
   el.innerHTML = bg + `<div class="title">${title}</div>` + seats;
   el.classList.toggle("is-break", true); el.dataset.brk = brk.id;
 }
+/* 미리보기: ?commute=am (출근길) / ?commute=pm (퇴근길) → 모든 사람이 오가는 모습 */
+const COMMUTE_PV = new URLSearchParams(location.search).get("commute");
 function renderStreet(date){
   const el = document.getElementById("street");
-  const ph = phaseOf(date);
-  const brk = breakOf(date);
+  const pv = COMMUTE_PV==="am" ? "before" : COMMUTE_PV==="pm" ? "after" : null;
+  const ph = pv || phaseOf(date);
+  const brk = pv ? null : breakOf(date);
   if (brk){ renderBreak(el, date, brk); return; }
   if (!(ph==="before" || ph==="after")){ el.hidden = true; el.innerHTML = ""; return; }
   const checkin = (D.checkin||{})[date]||{};
-  const people = D.staff.filter(st=>!absence(st.id,date) && (ph==="after" ? personPhase(st.id,date)==="after" : (!arrivedAt(st.id,date) && !lateStart(st.id,date))));
+  const people = pv ? D.staff.slice() : D.staff.filter(st=>!absence(st.id,date) && (ph==="after" ? personPhase(st.id,date)==="after" : (!arrivedAt(st.id,date) && !lateStart(st.id,date))));
   const carSp = (D.director.sprite||{}).car;
-  const dirCar = carSp && (ph==="before" ? dirCommuting(date) : (date===D.current && dirStatus(date).status==="out"));
+  const dirCar = carSp && (pv ? true : ph==="before" ? dirCommuting(date) : (date===D.current && dirStatus(date).status==="out"));
   if (ph==="after" && !people.length && !dirCar){ el.hidden = true; el.innerHTML = ""; return; }
   const mode = ph==="before" ? "run" : "leave";
   el.hidden = false;
