@@ -1043,9 +1043,11 @@ function renderBreak(el, date, brk){
 }
 /* 근무시간 중 오가는 사람: 늦은 출근은 출근 1시간 전부터, 조기 퇴근은 퇴근 후 1시간 동안 길에 보임 */
 function workCommuters(date){
-  const r = {come:[], go:[]};
+  const r = {come:[], go:[], dir:false};
   if (date!==D.current || phaseOf(date)!=="work") return r;
   const now = nowMin();
+  const ds = FEV.director_status;
+  if (ds && ds.date===date && ds.status==="out" && ds.time){ const t=hm2m(ds.time); r.dir = now>=t && now<t+60; }
   D.staff.forEach(st=>{
     if (absence(st.id,date)) return;
     const o = lateStart(st.id,date);
@@ -1067,21 +1069,21 @@ function renderStreet(date){
   const brk = pv ? null : breakOf(date);
   if (brk){ renderBreak(el, date, brk); return; }
   const wc = (!pv && ph==="work") ? workCommuters(date) : null;
-  if (wc && !wc.come.length && !wc.go.length){ el.hidden = true; el.innerHTML = ""; return; }
+  if (wc && !wc.come.length && !wc.go.length && !wc.dir){ el.hidden = true; el.innerHTML = ""; return; }
   if (!wc && !(ph==="before" || ph==="after")){ el.hidden = true; el.innerHTML = ""; return; }
   const goIds = new Set(wc ? wc.go.map(x=>x.id) : []);
   const checkin = (D.checkin||{})[date]||{};
   const people = wc ? [...wc.come, ...wc.go] : pv ? D.staff.slice() : D.staff.filter(st=>!absence(st.id,date) && (ph==="after" ? personPhase(st.id,date)==="after" : (!arrivedAt(st.id,date) && !lateStart(st.id,date))));
   const carSp = (D.director.sprite||{}).car;
-  const dirCar = carSp && !wc && (pv ? true : ph==="before" ? dirCommuting(date) : (date===D.current && dirStatus(date).status==="out"));
+  const dirCar = carSp && (wc ? wc.dir : pv ? true : ph==="before" ? dirCommuting(date) : (date===D.current && dirStatus(date).status==="out"));
   if (ph==="after" && !people.length && !dirCar){ el.hidden = true; el.innerHTML = ""; return; }
   const mode = ph==="before" ? "run" : "leave";
   el.hidden = false;
   const n = people.length + (dirCar?1:0);
   const title = wc
-    ? (wc.come.length && wc.go.length ? `<b>${T("🚶 오가는 길","🚶 ระหว่างทาง")}</b><small>${T(`${wc.come.length}명 출근 중 · ${wc.go.length}명 먼저 퇴근`, `กำลังมา ${wc.come.length} คน · กลับก่อน ${wc.go.length} คน`)}</small>`
+    ? (wc.come.length && (wc.go.length||dirCar) ? `<b>${T("🚶 오가는 길","🚶 ระหว่างทาง")}</b><small>${T(`${wc.come.length}명 출근 중 · ${wc.go.length+(dirCar?1:0)}명 먼저 퇴근`, `กำลังมา ${wc.come.length} คน · กลับก่อน ${wc.go.length+(dirCar?1:0)} คน`)}</small>`
       : wc.come.length ? `<b>${T("🚶 출근길","🚶 ระหว่างทางมาทำงาน")}</b><small>${T(`${wc.come.length}명이 회사로 오는 중`, `${wc.come.length} คนกำลังมาที่ออฟฟิศ`)}</small>`
-      : `<b>${T("🌆 퇴근길","🌆 ทางกลับบ้าน")}</b><small>${T(`${wc.go.length}명 먼저 퇴근`, `กลับก่อน ${wc.go.length} คน`)}</small>`)
+      : `<b>${T("🌆 퇴근길","🌆 ทางกลับบ้าน")}</b><small>${T(`${wc.go.length+(dirCar?1:0)}명 먼저 퇴근`, `กลับก่อน ${wc.go.length+(dirCar?1:0)} คน`)}</small>`)
     : ph==="before"
     ? `<b>${T("🚶 출근길","🚶 ระหว่างทางมาทำงาน")}</b><small>${n ? T(`${n}명이 회사로 오는 중 · 08:30 출근`, `${n} คนกำลังมาที่ออฟฟิศ · เข้างาน 08:30`) : T("모두 출근 완료!","ทุกคนมาถึงแล้ว!")}</small>`
     : `<b>${T("🌆 퇴근길","🌆 ทางกลับบ้าน")}</b><small>${T(`오늘도 수고했어요 · ${n}명 퇴근`, `วันนี้เหนื่อยแล้วนะครับ · เลิกงาน ${n} คน`)}</small>`;
@@ -1288,7 +1290,7 @@ function tickClock(){
   const bk = live ? (breakOf(D.current)?.id || null) : null;
   if (live && lastBreak!==undefined && bk!==lastBreak && lastPhase) render();
   lastBreak = bk;
-  const wk = live ? (()=>{ const w=workCommuters(D.current); return w.come.map(x=>x.id).join()+"|"+w.go.map(x=>x.id).join(); })() : "";
+  const wk = live ? (()=>{ const w=workCommuters(D.current); return w.come.map(x=>x.id).join()+"|"+w.go.map(x=>x.id).join()+"|"+w.dir; })() : "";
   if (live && lastWk!==undefined && wk!==lastWk && lastPhase) render();
   lastWk = wk;
   lastPhase = ph; lastGone = gone;
