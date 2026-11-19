@@ -927,12 +927,13 @@ function render(){
       <div class="dr">${(()=>{ const ds=dirStatus(date), bk=phaseOf(date)==="work"?breakOf(date):null;
         const away = (ds.status==="custom" ? ds.away : ds.status!=="in") || bk;
         const customTxt = ds.status==="custom" ? esc(LANG==="th" ? (ds.msg_th||ds.msg) : ds.msg) : "";
+        const isPreset = ds.status==="custom" && (D.dirPresets||[]).some(p=>`${p.icon} ${p.ko}`===ds.msg);
         const lvMsg = ds.leave ? ((ds.leave.to||ds.leave.from) > ds.leave.from ? T(`🌴 휴가 중 · ${md(nextWorkday(ds.leave.to||ds.leave.from))} 복귀`,`🌴 ลาพักร้อน · กลับ ${md(nextWorkday(ds.leave.to||ds.leave.from))}`) : T("🌴 연차","🌴 ลางาน")) : "";
-        const msg = ds.status==="leave" ? lvMsg : bk ? T(bk.bub_ko, bk.bub_th) : ds.status==="custom" ? `💬 ${customTxt}` : ds.status==="meeting" ? T(`🚗 외부 미팅 중 · ${ds.time||""}부터`,`🚗 ประชุมข้างนอก · ตั้งแต่ ${ds.time||""}`) : ds.status==="out" ? T(`👋 퇴근 · ${ds.time||""}`,`👋 กลับบ้านแล้ว · ${ds.time||""}`) : "";
+        const msg = ds.status==="leave" ? lvMsg : bk ? T(bk.bub_ko, bk.bub_th) : ds.status==="custom" ? (isPreset ? customTxt : `💬 ${customTxt}`) : ds.status==="meeting" ? T(`🚗 외부 미팅 중 · ${ds.time||""}부터`,`🚗 ประชุมข้างนอก · ตั้งแต่ ${ds.time||""}`) : ds.status==="out" ? T(`👋 퇴근 · ${ds.time||""}`,`👋 กลับบ้านแล้ว · ${ds.time||""}`) : "";
         return away ? `<button class="desk" data-id="dr" aria-label="지사장">
         <div class="bubble idle"><div class="txt">${msg}</div></div>${emptyDesk(null, deskTypeOf("dr"))}
         <div class="nameplate">` : `<button class="desk working" data-id="dr" aria-label="지사장">
-        <div class="bubble">${customTxt ? `💬 ${customTxt}` : STAFF ? T("오늘도 화이팅! 💪","วันนี้สู้ๆ นะครับ! 💪") : `오늘 보고 <b>${reported}</b>/${D.staff.length-away} 확인 중`}</div>
+        <div class="bubble">${customTxt ? (isPreset ? customTxt : `💬 ${customTxt}`) : STAFF ? T("오늘도 화이팅! 💪","วันนี้สู้ๆ นะครับ! 💪") : `오늘 보고 <b>${reported}</b>/${D.staff.length-away} 확인 중`}</div>
         ${avatar({id:"dr"},"working")}
         <div class="nameplate">`; })()}${esc(T(D.director.label, D.director.label_th||D.director.label))}</div><div class="role">${T("지사장실","ห้องผู้อำนวยการ")}</div></button></div>
       <div class="equip-room"><a class="equip" href="https://cgnthai.github.io/rental/" target="_blank" rel="noopener" aria-label="${T("장비실 — 장비 대여 페이지로 이동","ห้องอุปกรณ์ — ไปหน้ายืมอุปกรณ์")}">
@@ -1099,6 +1100,8 @@ async function delDirLeave(k, btn){
   try{ await ffs.deleteDoc(ffs.doc(fdb,"office_events",k)); openDrawer("dr"); }catch(x){ btn.textContent="✕"; }
 }
 
+
+async function setDirPreset(i){ const p=(D.dirPresets||[])[i]; if(!p) return; await setDirStatus("custom", {msg:`${p.icon} ${p.ko}`.slice(0,60), msg_th:`${p.icon} ${p.th}`.slice(0,80), away:!!p.away}); openDrawer("dr"); }
 async function saveDirCustom(){
   const ko=document.getElementById("dsK").value.trim(), th=document.getElementById("dsT").value.trim(), away=document.getElementById("dsAway").checked, m=document.getElementById("dsM");
   if(!ko){ m.textContent="상태 메시지를 입력해 주세요."; return; }
@@ -1119,7 +1122,9 @@ function openDrawer(id){
         const lv = Object.entries(FEV).filter(([k,e])=>e.kind==="dirleave" && (e.to||e.from)>=D.current).sort((x,y)=>x[1].from.localeCompare(y[1].from));
         const cs = dirStatus(D.current);
         return `<h3>지금 상태</h3>${b("in","🏢","출근 · 자리에 있음")}${b("meeting","🚗","외부 미팅 · 자리 비움")}${b("out","👋","퇴근")}
-        <h3>✏️ 상태 메시지 직접 입력${cur==="custom"?" ✓":""}</h3>
+        <h3>⚡ 자주 쓰는 상태</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">${(D.dirPresets||[]).map((p,i)=>{ const on = cur==="custom" && cs.msg===`${p.icon} ${p.ko}`; return `<button type="button" onclick="setDirPreset(${i})" style="border:1px solid ${on?"var(--ink)":"#ccc"};background:${on?"var(--ink)":"#fff"};color:${on?"#fff":"inherit"};border-radius:999px;padding:6px 11px;font-size:13px;cursor:pointer">${p.icon} ${esc(p.ko)} <small style="opacity:.7">${p.away?"· 자리 비움":""}</small></button>`; }).join("")}</div>
+        <h3>✏️ 상태 메시지 직접 입력${cur==="custom" && !(D.dirPresets||[]).some(p=>`${p.icon} ${p.ko}`===cs.msg)?" ✓":""}</h3>
         <div class="ef"><div class="row" style="grid-template-columns:1fr">
           <input id="dsK" maxlength="60" placeholder="예) 본사 화상회의 중" value="${cur==="custom"?esc(cs.msg||""):""}" style="border:1px solid #ddd;border-radius:8px;padding:8px;font-size:15px">
           <input id="dsT" maxlength="80" placeholder="태국어 (선택) 예) ประชุมออนไลน์กับสำนักงานใหญ่" value="${cur==="custom"?esc(cs.msg_th||""):""}" style="border:1px solid #ddd;border-radius:8px;padding:8px;font-size:14px">
