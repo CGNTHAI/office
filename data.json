@@ -1825,12 +1825,12 @@
    },
    "car": {
     "src": "sprites/dr_car.png",
-    "w": 426,
+    "w": 447,
     "h": 230
    },
    "carL": {
     "src": "sprites/dr_car_l.png",
-    "w": 426,
+    "w": 447,
     "h": 230
    }
   },
