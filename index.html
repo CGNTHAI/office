@@ -926,7 +926,7 @@ function render(){
       <div><div class="rack" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><div class="lbl">${T("서버실","ห้องเซิร์ฟเวอร์")}</div></div>
       <div class="dr">${(()=>{ const ds=dirStatus(date), bk=phaseOf(date)==="work"?breakOf(date):null;
         const away = ds.status!=="in" || bk;
-        const msg = bk ? T(bk.bub_ko, bk.bub_th) : ds.status==="meeting" ? T(`🤝 미팅 중 · ${ds.time||""}부터`,`🤝 ประชุมอยู่ · ตั้งแต่ ${ds.time||""}`) : ds.status==="out" ? T(`👋 퇴근 · ${ds.time||""}`,`👋 กลับบ้านแล้ว · ${ds.time||""}`) : "";
+        const msg = bk ? T(bk.bub_ko, bk.bub_th) : ds.status==="meeting" ? T(`🚗 외부 미팅 중 · ${ds.time||""}부터`,`🚗 ประชุมข้างนอก · ตั้งแต่ ${ds.time||""}`) : ds.status==="out" ? T(`👋 퇴근 · ${ds.time||""}`,`👋 กลับบ้านแล้ว · ${ds.time||""}`) : "";
         return away ? `<button class="desk" data-id="dr" aria-label="지사장">
         <div class="bubble idle"><div class="txt">${msg}</div></div>${emptyDesk(null, deskTypeOf("dr"))}
         <div class="nameplate">` : `<button class="desk working" data-id="dr" aria-label="지사장">
@@ -1092,7 +1092,7 @@ function openDrawer(id){
     document.getElementById("dbody").innerHTML = `
       <div class="dhead">${avatar({id:"dr"}, "working", false)}<div><h2>${esc(T(D.director.label, D.director.label_th||D.director.label))}</h2><div class="meta">${T("지사장실","ห้องผู้อำนวยการ")}</div></div></div>
       ${adminUser && fdb ? (()=>{ const cur=dirStatus(D.current).status; const b=(k,ic,ko)=>`<button type="button" class="editbtn" style="${cur===k?"":"background:#fff;color:var(--ink);border:1px solid #ccc"}" onclick="setDirStatus('${k}').then(()=>openDrawer('dr'))">${ic} ${ko}${cur===k?" ✓":""}</button>`;
-        return `<h3>지금 상태</h3>${b("in","🏢","출근 · 자리에 있음")}${b("meeting","🤝","미팅 중 · 자리 비움")}${b("out","👋","퇴근")}`; })() : `<p class="hint">${T("지사장님 상태는 관리자 모드에서 바꿀 수 있어요.","")}</p>`}
+        return `<h3>지금 상태</h3>${b("in","🏢","출근 · 자리에 있음")}${b("meeting","🚗","외부 미팅 · 자리 비움")}${b("out","👋","퇴근")}`; })() : `<p class="hint">${T("지사장님 상태는 관리자 모드에서 바꿀 수 있어요.","")}</p>`}
       ${imgOf(id)?"":`<h3>캐릭터 꾸미기</h3><div id="pickerWrap">${pickerHTML(id)}</div>`}`;
     showDrawer(); return;
   }
