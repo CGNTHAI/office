@@ -828,6 +828,7 @@ function breakOf(date){
 let lastBreak = null;
 let lastGone = -1;
 let lastPhase = null;
+let lastWk;
 function weekBlocked(id, date){ return (weekGoals(id,date)||[]).filter(t=>t.s==="blocked").map(t=>({...t, ko:"[주간] "+(t.ko||t.th), th:"[สัปดาห์] "+(t.th||t.ko), n:t.n, nth:t.nth})); }
 function needsHelp(id, date){ const r=report(id,date); return !!(r?.tasks?.some(t=>t.s==="blocked") || weekBlocked(id,date).length); }
 function bubbleOrder(r){
@@ -1040,6 +1041,20 @@ function renderBreak(el, date, brk){
   el.innerHTML = bg + `<div class="title">${title}</div>` + seats;
   el.classList.toggle("is-break", true); el.dataset.brk = brk.id;
 }
+/* 근무시간 중 오가는 사람: 늦은 출근은 출근 1시간 전부터, 조기 퇴근은 퇴근 후 1시간 동안 길에 보임 */
+function workCommuters(date){
+  const r = {come:[], go:[]};
+  if (date!==D.current || phaseOf(date)!=="work") return r;
+  const now = nowMin();
+  D.staff.forEach(st=>{
+    if (absence(st.id,date)) return;
+    const o = lateStart(st.id,date);
+    if (o && !arrivedAt(st.id,date) && now >= hm2m(o.in)-60) r.come.push(st);
+    const co = checkoutMin(st.id,date);
+    if (co!=null && now >= co && now < co+60) r.go.push(st);
+  });
+  return r;
+}
 /* 배경 SVG가 넓은 화면에서 커지는 만큼 인도·차도 위치도 같이 맞춤 */
 function streetScale(){ const el=document.getElementById("street"); if(el && el.clientWidth) el.style.setProperty("--s", Math.max(el.clientWidth/1200, el.clientHeight/300).toFixed(3)); }
 addEventListener("resize", streetScale);
@@ -1051,28 +1066,35 @@ function renderStreet(date){
   const ph = pv || phaseOf(date);
   const brk = pv ? null : breakOf(date);
   if (brk){ renderBreak(el, date, brk); return; }
-  if (!(ph==="before" || ph==="after")){ el.hidden = true; el.innerHTML = ""; return; }
+  const wc = (!pv && ph==="work") ? workCommuters(date) : null;
+  if (wc && !wc.come.length && !wc.go.length){ el.hidden = true; el.innerHTML = ""; return; }
+  if (!wc && !(ph==="before" || ph==="after")){ el.hidden = true; el.innerHTML = ""; return; }
+  const goIds = new Set(wc ? wc.go.map(x=>x.id) : []);
   const checkin = (D.checkin||{})[date]||{};
-  const people = pv ? D.staff.slice() : D.staff.filter(st=>!absence(st.id,date) && (ph==="after" ? personPhase(st.id,date)==="after" : (!arrivedAt(st.id,date) && !lateStart(st.id,date))));
+  const people = wc ? [...wc.come, ...wc.go] : pv ? D.staff.slice() : D.staff.filter(st=>!absence(st.id,date) && (ph==="after" ? personPhase(st.id,date)==="after" : (!arrivedAt(st.id,date) && !lateStart(st.id,date))));
   const carSp = (D.director.sprite||{}).car;
-  const dirCar = carSp && (pv ? true : ph==="before" ? dirCommuting(date) : (date===D.current && dirStatus(date).status==="out"));
+  const dirCar = carSp && !wc && (pv ? true : ph==="before" ? dirCommuting(date) : (date===D.current && dirStatus(date).status==="out"));
   if (ph==="after" && !people.length && !dirCar){ el.hidden = true; el.innerHTML = ""; return; }
   const mode = ph==="before" ? "run" : "leave";
   el.hidden = false;
   const n = people.length + (dirCar?1:0);
-  const title = ph==="before"
+  const title = wc
+    ? (wc.come.length && wc.go.length ? `<b>${T("🚶 오가는 길","🚶 ระหว่างทาง")}</b><small>${T(`${wc.come.length}명 출근 중 · ${wc.go.length}명 먼저 퇴근`, `กำลังมา ${wc.come.length} คน · กลับก่อน ${wc.go.length} คน`)}</small>`
+      : wc.come.length ? `<b>${T("🚶 출근길","🚶 ระหว่างทางมาทำงาน")}</b><small>${T(`${wc.come.length}명이 회사로 오는 중`, `${wc.come.length} คนกำลังมาที่ออฟฟิศ`)}</small>`
+      : `<b>${T("🌆 퇴근길","🌆 ทางกลับบ้าน")}</b><small>${T(`${wc.go.length}명 먼저 퇴근`, `กลับก่อน ${wc.go.length} คน`)}</small>`)
+    : ph==="before"
     ? `<b>${T("🚶 출근길","🚶 ระหว่างทางมาทำงาน")}</b><small>${n ? T(`${n}명이 회사로 오는 중 · 08:30 출근`, `${n} คนกำลังมาที่ออฟฟิศ · เข้างาน 08:30`) : T("모두 출근 완료!","ทุกคนมาถึงแล้ว!")}</small>`
     : `<b>${T("🌆 퇴근길","🌆 ทางกลับบ้าน")}</b><small>${T(`오늘도 수고했어요 · ${n}명 퇴근`, `วันนี้เหนื่อยแล้วนะครับ · เลิกงาน ${n} คน`)}</small>`;
   let wi=0, mi=0;
   const walkers = people.map((st,i)=>{
     const S = st.sprite||{};
     const moto = !!S.moto;
-    const sp = S.moto || S.walk || S[mode]; if (!sp) return "";
-    const toLeft = mode!=="run";
+    const toLeft = wc ? goIds.has(st.id) : mode!=="run";
+    const sp = S.moto || S.walk || S[toLeft?"leave":"run"]; if (!sp) return "";
     const flip = (S.moto||S.walk) ? toLeft : !!sp.flip;
     const k = moto ? mi++ : wi++;
     const dur = moto ? 11 + (k*5)%4 : (mode==="run" ? 30 : 34) + (k*7)%8;
-    const delay = -((k*dur)/(moto?3:Math.max(n,1))).toFixed(1);
+    const delay = -(((k+0.4)*dur)/(moto?3:Math.max(n,1))).toFixed(1);
     const lane = moto ? 30 + (k%2)*4 : [70, 92, 80, 100][k%4];
     const cls = moto ? "moto" : (S.walk ? "stroll" : (mode==='leave'?'stroll':''));
     return `<button class="walker ${cls} ${flip?'flip':''}" data-id="${st.id}" aria-label="${esc(st.name)}"
@@ -1266,6 +1288,9 @@ function tickClock(){
   const bk = live ? (breakOf(D.current)?.id || null) : null;
   if (live && lastBreak!==undefined && bk!==lastBreak && lastPhase) render();
   lastBreak = bk;
+  const wk = live ? (()=>{ const w=workCommuters(D.current); return w.come.map(x=>x.id).join()+"|"+w.go.map(x=>x.id).join(); })() : "";
+  if (live && lastWk!==undefined && wk!==lastWk && lastPhase) render();
+  lastWk = wk;
   lastPhase = ph; lastGone = gone;
   const toMin = t => { const [a,b]=t.split(":").map(Number); return a*60+b; };
   const cur = now.getUTCHours()*60+m, st = toMin(D.hours.start), en = toMin(D.hours.end);
