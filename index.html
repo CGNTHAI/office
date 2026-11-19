@@ -927,7 +927,7 @@ function render(){
       <div class="dr">${(()=>{ const ds=dirStatus(date), bk=phaseOf(date)==="work"?breakOf(date):null;
         const away = (ds.status==="custom" ? ds.away : ds.status!=="in") || bk;
         const customTxt = ds.status==="custom" ? esc(LANG==="th" ? (ds.msg_th||ds.msg) : ds.msg) : "";
-        const lvMsg = ds.leave ? (ds.leave.ltype==="휴가" ? T(`🌴 휴가 중 · ${md(nextWorkday(ds.leave.to||ds.leave.from))} 복귀`,`🌴 ลาพักร้อน · กลับ ${md(nextWorkday(ds.leave.to||ds.leave.from))}`) : T("🌴 연차","🌴 ลางาน")) : "";
+        const lvMsg = ds.leave ? ((ds.leave.to||ds.leave.from) > ds.leave.from ? T(`🌴 휴가 중 · ${md(nextWorkday(ds.leave.to||ds.leave.from))} 복귀`,`🌴 ลาพักร้อน · กลับ ${md(nextWorkday(ds.leave.to||ds.leave.from))}`) : T("🌴 연차","🌴 ลางาน")) : "";
         const msg = ds.status==="leave" ? lvMsg : bk ? T(bk.bub_ko, bk.bub_th) : ds.status==="custom" ? `💬 ${customTxt}` : ds.status==="meeting" ? T(`🚗 외부 미팅 중 · ${ds.time||""}부터`,`🚗 ประชุมข้างนอก · ตั้งแต่ ${ds.time||""}`) : ds.status==="out" ? T(`👋 퇴근 · ${ds.time||""}`,`👋 กลับบ้านแล้ว · ${ds.time||""}`) : "";
         return away ? `<button class="desk" data-id="dr" aria-label="지사장">
         <div class="bubble idle"><div class="txt">${msg}</div></div>${emptyDesk(null, deskTypeOf("dr"))}
@@ -1088,10 +1088,10 @@ function dirStatus(date){
 }
 
 async function addDirLeave(){
-  const t=document.getElementById("dlT").value, f=document.getElementById("dlF").value, e=document.getElementById("dlE").value, m=document.getElementById("dlM");
+  const f=document.getElementById("dlF").value, e=document.getElementById("dlE").value, m=document.getElementById("dlM");
   if(!f){ m.textContent="시작일을 골라 주세요."; return; }
   if(e && e<f){ m.textContent="끝나는 날이 시작일보다 빨라요."; return; }
-  const data={kind:"dirleave", ltype:t, from:f, to:e||f, at:ffs.serverTimestamp()};
+  const data={kind:"dirleave", from:f, to:e||f, at:ffs.serverTimestamp()};
   try{ await ffs.addDoc(ffs.collection(fdb,"office_events"), data); openDrawer("dr"); }catch(x){ m.textContent="저장하지 못했어요."; }
 }
 async function delDirLeave(k, btn){
@@ -1129,11 +1129,10 @@ function openDrawer(id){
           <button type="button" class="add" onclick="saveDirCustom()">이 메시지로 바꾸기</button><p class="msg" id="dsM"></p></div></div>
         <h3>🌴 연차·휴가 등록</h3>
         <div class="ef"><div class="row" style="grid-template-columns:1fr">
-          <div class="sels"><select id="dlT"><option value="연차">연차 (하루)</option><option value="휴가">휴가 (여러 날)</option></select></div>
           <div class="sels" style="align-items:center"><input id="dlF" type="date" value="${D.current}" style="border:1px solid #ddd;border-radius:8px;padding:6px"> ~ <input id="dlE" type="date" style="border:1px solid #ddd;border-radius:8px;padding:6px"></div>
-          <p class="hint" style="margin:0">하루짜리면 끝나는 날은 비워 두세요.</p>
+          <p class="hint" style="margin:0">하루짜리면 끝나는 날은 비워 두세요. 하루면 연차, 이틀 이상이면 휴가로 표시돼요.</p>
           <button type="button" class="add" onclick="addDirLeave()">+ 등록</button><p class="msg" id="dlM"></p></div></div>
-        ${lv.length?`<ul class="tasks">${lv.map(([k,e])=>`<li><b>🌴 ${esc(e.ltype)}</b> ${md(e.from)}${e.to&&e.to!==e.from?"~"+md(e.to):""} <button type="button" class="del" onclick="delDirLeave('${k}',this)" title="삭제">✕</button></li>`).join("")}</ul>`:""}`; })() : `<p class="hint">${T("지사장님 상태는 관리자 모드에서 바꿀 수 있어요.","")}</p>`}
+        ${lv.length?`<ul class="tasks">${lv.map(([k,e])=>`<li><b>🌴 ${(e.to||e.from)>e.from?"휴가":"연차"}</b> ${md(e.from)}${e.to&&e.to!==e.from?"~"+md(e.to):""} <button type="button" class="del" onclick="delDirLeave('${k}',this)" title="삭제">✕</button></li>`).join("")}</ul>`:""}`; })() : `<p class="hint">${T("지사장님 상태는 관리자 모드에서 바꿀 수 있어요.","")}</p>`}
       ${imgOf(id)?"":`<h3>캐릭터 꾸미기</h3><div id="pickerWrap">${pickerHTML(id)}</div>`}`;
     showDrawer(); return;
   }
