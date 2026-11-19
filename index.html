@@ -924,10 +924,15 @@ function render(){
     </section>
     <div class="annex">
       <div><div class="rack" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><div class="lbl">${T("서버실","ห้องเซิร์ฟเวอร์")}</div></div>
-      <div class="dr"><button class="desk working" data-id="dr" aria-label="지사장 캐릭터 꾸미기">
+      <div class="dr">${(()=>{ const ds=dirStatus(date), bk=phaseOf(date)==="work"?breakOf(date):null;
+        const away = ds.status!=="in" || bk;
+        const msg = bk ? T(bk.bub_ko, bk.bub_th) : ds.status==="meeting" ? T(`🤝 미팅 중 · ${ds.time||""}부터`,`🤝 ประชุมอยู่ · ตั้งแต่ ${ds.time||""}`) : ds.status==="out" ? T(`👋 퇴근 · ${ds.time||""}`,`👋 กลับบ้านแล้ว · ${ds.time||""}`) : "";
+        return away ? `<button class="desk" data-id="dr" aria-label="지사장">
+        <div class="bubble idle"><div class="txt">${msg}</div></div>${emptyDesk(null, deskTypeOf("dr"))}
+        <div class="nameplate">` : `<button class="desk working" data-id="dr" aria-label="지사장">
         <div class="bubble">${STAFF ? T("오늘도 화이팅! 💪","วันนี้สู้ๆ นะครับ! 💪") : `오늘 보고 <b>${reported}</b>/${D.staff.length-away} 확인 중`}</div>
         ${avatar({id:"dr"},"working")}
-        <div class="nameplate">${esc(T(D.director.label, D.director.label_th||D.director.label))}</div><div class="role">${T("지사장실","ห้องผู้อำนวยการ")}</div></button></div>
+        <div class="nameplate">`; })()}${esc(T(D.director.label, D.director.label_th||D.director.label))}</div><div class="role">${T("지사장실","ห้องผู้อำนวยการ")}</div></button></div>
       <div class="equip-room"><a class="equip" href="https://cgnthai.github.io/rental/" target="_blank" rel="noopener" aria-label="${T("장비실 — 장비 대여 페이지로 이동","ห้องอุปกรณ์ — ไปหน้ายืมอุปกรณ์")}">
         <svg class="equip-art" viewBox="0 0 120 78" aria-hidden="true">
           <rect x="4" y="66" width="112" height="6" rx="2" fill="#b27c4c"/>
@@ -1005,7 +1010,7 @@ function streetSVG(){
 
 function renderBreak(el, date, brk){
   const people = D.staff.filter(st=>!absence(st.id,date) && st.sprite?.sit && !lateStart(st.id,date) && personPhase(st.id,date)!=="after");
-  if (brk.id==="worship") people.push({id:"dr", name:T(D.director.label, D.director.label_th||D.director.label), sprite:D.director.sprite});
+  if (brk.id==="worship" || dirStatus(date).status==="in") people.push({id:"dr", name:T(D.director.label, D.director.label_th||D.director.label), sprite:D.director.sprite});
   el.hidden = false;
   const n = people.length;
   const rows = brk.id==="worship" ? 2 : 1;
@@ -1069,11 +1074,25 @@ function taskList(arr){
     ${noteText(t)?`<span class="note">↳ ${esc(noteText(t))}</span>`:""}
     <span class="pt" style="color:${p.color}">● ${esc(p.ko)}</span></li>`;}).join("")}</ul>`;
 }
+
+/* 지사장 상태: 출근 / 미팅 중 / 퇴근 (관리자만 변경, office_events/director_status) */
+function dirStatus(date){
+  if (date!==D.current) return {status:"in"};
+  const s = FEV.director_status; if (!s || s.date!==D.current) return {status:"in"};
+  return s;
+}
+async function setDirStatus(status){
+  const n=nowBKK(), t=`${String(n.getUTCHours()).padStart(2,"0")}:${String(n.getUTCMinutes()).padStart(2,"0")}`;
+  try{ await ffs.setDoc(ffs.doc(fdb,"office_events","director_status"), {kind:"status", status, date:D.current, time:t, at:ffs.serverTimestamp()}); }
+  catch(e){ alertLite("저장하지 못했어요."); }
+}
 function openDrawer(id){
   editId = id;
   if (id==="dr"){
     document.getElementById("dbody").innerHTML = `
       <div class="dhead">${avatar({id:"dr"}, "working", false)}<div><h2>${esc(T(D.director.label, D.director.label_th||D.director.label))}</h2><div class="meta">${T("지사장실","ห้องผู้อำนวยการ")}</div></div></div>
+      ${adminUser && fdb ? (()=>{ const cur=dirStatus(D.current).status; const b=(k,ic,ko)=>`<button type="button" class="editbtn" style="${cur===k?"":"background:#fff;color:var(--ink);border:1px solid #ccc"}" onclick="setDirStatus('${k}').then(()=>openDrawer('dr'))">${ic} ${ko}${cur===k?" ✓":""}</button>`;
+        return `<h3>지금 상태</h3>${b("in","🏢","출근 · 자리에 있음")}${b("meeting","🤝","미팅 중 · 자리 비움")}${b("out","👋","퇴근")}`; })() : `<p class="hint">${T("지사장님 상태는 관리자 모드에서 바꿀 수 있어요.","")}</p>`}
       ${imgOf(id)?"":`<h3>캐릭터 꾸미기</h3><div id="pickerWrap">${pickerHTML(id)}</div>`}`;
     showDrawer(); return;
   }
@@ -1386,7 +1405,7 @@ function evDate(s){ const d=parse(s); return `${d.getUTCMonth()+1}/${d.getUTCDat
 function dayDiff(a,b){ return Math.round((parse(a)-parse(b))/864e5); }
 function boardItems(){
   const today=D.current;
-  const all=[...(D.events||[]).map(e=>({...e,src:"file"})), ...(D.notices||[]).map(e=>({...e,kind:"notice",src:"file"})), ...Object.entries(FEV).map(([k,e])=>({...e,_id:k,src:"fb"}))];
+  const all=[...(D.events||[]).map(e=>({...e,src:"file"})), ...(D.notices||[]).map(e=>({...e,kind:"notice",src:"file"})), ...Object.entries(FEV).filter(([k,e])=>e.kind!=="status").map(([k,e])=>({...e,_id:k,src:"fb"}))];
   const notices=all.filter(e=>e.kind==="notice" && (!e.until || e.until>=today) && (!e.date || e.date<=today || true)).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
   const events=all.filter(e=>e.kind!=="notice" && e.date && (e.end||e.date)>=today).sort((a,b)=>a.date.localeCompare(b.date));
   return {notices, events};
@@ -1515,7 +1534,7 @@ if (PUBLIC){
     ffs=fsM; fdb=ffs.getFirestore(app);
     const startSync=()=>{ if(!D){ setTimeout(startSync,300); return; } ffs.onSnapshot(ffs.collection(fdb,"office_reports"), snap=>{ STAFF_DOCS={}; snap.forEach(d=>STAFF_DOCS[d.id]=d.data()); applyStaffDocs(); }, err=>console.warn("office_reports", err.code)); };
     startSync();
-    ffs.onSnapshot(ffs.collection(fdb,"office_events"), snap=>{ FEV={}; snap.forEach(d=>FEV[d.id]=d.data()); renderEvents(); }, err=>console.warn("office_events", err.code));
+    ffs.onSnapshot(ffs.collection(fdb,"office_events"), snap=>{ FEV={}; snap.forEach(d=>FEV[d.id]=d.data()); if (D) render(); else renderEvents(); }, err=>console.warn("office_events", err.code));
     fa.onAuthStateChanged(fauth,u=>{ const was=!!adminUser; adminUser=u||null; STAFF=!adminUser;
       if(adminUser && !was) LANG="ko"; if(!adminUser && was) LANG="th";
       paintAdm(); if(D){ try{ closeDrawer(); }catch(e){} render(); tickClock(); if(window.drawLegend) drawLegend(); } });
