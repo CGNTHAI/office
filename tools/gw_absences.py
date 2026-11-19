@@ -8,7 +8,7 @@
 import json, sys, re, datetime as dt
 NAME = {"제이":"jay","핸":"hand","마이":"mild","맛":"mud","억":"ox","애":"aey","킵":"keep","삔":"pin","블루":"blue","네임":"name","쫑":"jong","비":"bee","찻":"chat"}
 KIND = {
- "연차":    ("leave","연차","ลาพักร้อน"),
+ "연차":    ("leave","연차","ลางาน"),
  "오전반차": ("leave","오전 반차","ลาครึ่งวันเช้า"),
  "오후반차": ("leave","오후 반차","ลาครึ่งวันบ่าย"),
  "보건휴가": ("leave","병가","ลาป่วย"),
@@ -52,7 +52,7 @@ for a in out:
 out = merged
 # 이틀 이상 이어지는 연차는 한국어로 '휴가'라고 표시
 for a_ in out:
-    if a_["ko"] == "연차" and a_["to"] > a_["from"]: a_["ko"] = "휴가"
+    if a_["ko"] == "연차" and a_["to"] > a_["from"]: a_["ko"], a_["th"] = "휴가", "ลาพักร้อน"
 # 손으로 넣은 항목 중 그룹웨어와 같은 사람·기간이 겹치는 건 그룹웨어 쪽을 우선
 def overlap(x, y): return x["id"] == y["id"] and not (x["to"] < y["from"] or y["to"] < x["from"])
 keep = [a for a in keep if not any(overlap(a, g) for g in out)]
