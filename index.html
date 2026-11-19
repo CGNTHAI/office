@@ -935,7 +935,7 @@ function render(){
         <div class="nameplate">` : `<button class="desk working" data-id="dr" aria-label="지사장">
         <div class="bubble">${customTxt ? (isPreset ? customTxt : `💬 ${customTxt}`) : STAFF ? T("오늘도 화이팅! 💪","วันนี้สู้ๆ นะครับ! 💪") : `오늘 보고 <b>${reported}</b>/${D.staff.length-away} 확인 중`}</div>
         ${avatar({id:"dr"},"working")}
-        <div class="nameplate">`; })()}${esc(T(D.director.label, D.director.label_th||D.director.label))}</div><div class="role">${T("지사장실","ห้องผู้อำนวยการ")}</div></button></div>
+        <div class="nameplate">`; })()}${esc(D.director.name||T(D.director.label, D.director.label_th))} <span class="kname">${esc(D.director.kname||"")}</span></div><div class="role">${T(D.director.label, D.director.label_th||D.director.label)}</div></button></div>
       <div class="equip-room"><a class="equip" href="https://cgnthai.github.io/rental/" target="_blank" rel="noopener" aria-label="${T("장비실 — 장비 대여 페이지로 이동","ห้องอุปกรณ์ — ไปหน้ายืมอุปกรณ์")}">
         <svg class="equip-art" viewBox="0 0 120 78" aria-hidden="true">
           <rect x="4" y="66" width="112" height="6" rx="2" fill="#b27c4c"/>
@@ -1013,7 +1013,7 @@ function streetSVG(){
 
 function renderBreak(el, date, brk){
   const people = D.staff.filter(st=>!absence(st.id,date) && st.sprite?.sit && !lateStart(st.id,date) && personPhase(st.id,date)!=="after");
-  if ((brk.id==="worship" && dirStatus(date).status!=="leave") || dirStatus(date).status==="in" || (dirStatus(date).status==="custom" && !dirStatus(date).away)) people.push({id:"dr", name:T(D.director.label, D.director.label_th||D.director.label), sprite:D.director.sprite});
+  if ((brk.id==="worship" && dirStatus(date).status!=="leave") || dirStatus(date).status==="in" || (dirStatus(date).status==="custom" && !dirStatus(date).away)) people.push({id:"dr", name:D.director.name||T(D.director.label, D.director.label_th||D.director.label), sprite:D.director.sprite});
   el.hidden = false;
   const n = people.length;
   const rows = brk.id==="worship" ? 2 : 1;
@@ -1117,7 +1117,7 @@ function openDrawer(id){
   editId = id;
   if (id==="dr"){
     document.getElementById("dbody").innerHTML = `
-      <div class="dhead">${avatar({id:"dr"}, "working", false)}<div><h2>${esc(T(D.director.label, D.director.label_th||D.director.label))}</h2><div class="meta">${T("지사장실","ห้องผู้อำนวยการ")}</div></div></div>
+      <div class="dhead">${avatar({id:"dr"}, "working", false)}<div><h2>${esc(D.director.name||"")} <small style="font-weight:400;color:var(--ink-soft)">${esc(T(D.director.label, D.director.label_th||D.director.label))}</small></h2><div class="meta">${T("지사장실","ห้องผู้อำนวยการ")}</div></div></div>
       ${adminUser && fdb ? (()=>{ const cur=dirStatus(D.current).status; const b=(k,ic,ko)=>`<button type="button" class="editbtn" style="${cur===k?"":"background:#fff;color:var(--ink);border:1px solid #ccc"}" onclick="setDirStatus('${k}').then(()=>openDrawer('dr'))">${ic} ${ko}${cur===k?" ✓":""}</button>`;
         const lv = Object.entries(FEV).filter(([k,e])=>e.kind==="dirleave" && (e.to||e.from)>=D.current).sort((x,y)=>x[1].from.localeCompare(y[1].from));
         const cs = dirStatus(D.current);
