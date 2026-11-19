@@ -1360,6 +1360,7 @@ function openEdit(id, kind){
           <div class="row" style="flex-direction:column;align-items:stretch">
             <button type="button" class="pri" data-p="late">🌅 ${T(`내일 늦게 출근 · ${rule.in} 출근`,`พรุ่งนี้เข้างานสาย · เข้า ${rule.in}`)}</button>
             <button type="button" data-p="early">🏠 ${T(`내일 일찍 퇴근 · ${rule.out} 퇴근`,`พรุ่งนี้กลับเร็ว · กลับ ${rule.out}`)}</button>
+            <button type="button" data-p="undec">🤔 ${T("아직 결정 못함","ยังไม่ได้ตัดสินใจ")}</button>
           </div>`, w=>{ w.querySelectorAll("[data-p]").forEach(x=>x.onclick=()=>{ w.remove(); res(x.dataset.p); }); w.addEventListener("click",e=>{ if(e.target===w) res("late"); }); }));
         data.ot = pick;
       }
@@ -1471,7 +1472,8 @@ function openEvForm(id, mode){
       <h3>🌙 ${T("오늘 야근 수고했어요!","วันนี้ทำงานล่วงเวลา ขอบคุณมากครับ!")}</h3><p>${T("내일은 어떻게 할까요?","พรุ่งนี้จะเลือกแบบไหนครับ?")}</p>
       <div class="row" style="flex-direction:column;align-items:stretch">
         <button type="button" class="pri" data-x>🌅 ${T(`내일 늦게 출근 · ${rule.in} 출근`,`พรุ่งนี้เข้างานสาย · เข้า ${rule.in}`)}</button>
-        <button type="button" data-x>🏠 ${T(`내일 일찍 퇴근 · ${rule.out} 퇴근`,`พรุ่งนี้กลับเร็ว · กลับ ${rule.out}`)}</button></div>`
+        <button type="button" data-x>🏠 ${T(`내일 일찍 퇴근 · ${rule.out} 퇴근`,`พรุ่งนี้กลับเร็ว · กลับ ${rule.out}`)}</button>
+        <button type="button" data-x>🤔 ${T("아직 결정 못함","ยังไม่ได้ตัดสินใจ")}</button></div>`
       : `<p>🔍 ${T(`${t} 퇴근은 야근 기준(21:30) 전이라 선택 창이 뜨지 않아요.`,`กลับบ้าน ${t} ยังไม่ถึงเกณฑ์ OT (21:30)`)}</p><div class="row"><button class="pri" data-x>OK</button></div>`,
       w=>w.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>w.remove()));
   }; show();
