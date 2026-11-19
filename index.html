@@ -843,6 +843,8 @@ function render(){
   D.staff.forEach(st=>{
     (lastWeek(st.id,date)||[]).forEach(t=>{ if(t.s==="moved"||t.s==="blocked") alerts.push({st,t,why:"지난주 "+STATUS[t.s].ko}); });
     (report(st.id,date)?.tasks||[]).forEach(t=>{ if(t.s==="blocked") alerts.push({st,t,why:"도움 필요"}); if(t.s==="moved") alerts.push({st,t,why:"미완·이월"}); });
+    const dco = STAFF_DOCS[date+"_"+st.id];
+    if (dco?.early) alerts.push({st, t:{ko: dco.early, s:"early"}, why:`⏰ 조기 퇴근 ${dco.checkout||""}`});
   });
   document.getElementById("summary").innerHTML = `
     <div class="chip">${T("보고","ส่งรายงาน")} <b>${reported}</b> / ${D.staff.length-away}${T("명"," คน")}</div>
@@ -1326,8 +1328,31 @@ function openEdit(id, kind){
     if(!tasks.length && !isOut){ f.querySelector("#efMsg").textContent=T("할 일을 하나 이상 적어 주세요","กรุณาใส่งานอย่างน้อย 1 รายการ"); return; }
     const b=f.querySelector("#efSave"); b.disabled=true; b.textContent=T("저장 중…","กำลังบันทึก…");
     const data = {date, id, tasks, at: ffs.serverTimestamp()}; if(newCi) data.checkin = newCi;
-    const prevCo = STAFF_DOCS[docId]?.checkout; if (prevCo) data.checkout = prevCo;
+    const prev = STAFF_DOCS[docId]||{}; ["checkout","ot","early"].forEach(k=>{ if(prev[k]) data[k]=prev[k]; });
     if (isOut){ const m = nowMin() + (night ? 24*60 : 0); data.checkout = `${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`; }
+    if (isOut && !night){
+      const com = hm2m(data.checkout), endM = hm2m(D.hours.end);
+      const ot = otOf(id, date), pmHalf = (D.absences||[]).some(x=>x.id===id && x.half==="pm" && date>=x.from && date<=x.to);
+      const otOk = ot && ot.pick!=="late" && com >= hm2m(ot.out) - 30;
+      if (com < endM && !otOk && !pmHalf){
+        const reason = await new Promise(res=>admModal(`<h3>🏠 ${T("오늘은 일찍 퇴근하시네요","วันนี้กลับก่อนเวลานะครับ")}</h3>
+          <p>${T("이유를 골라 주세요. (지사장님만 볼 수 있어요)","กรุณาเลือกเหตุผลครับ (ผู้อำนวยการเท่านั้นที่เห็น)")}</p>
+          <div class="row" style="flex-direction:column;align-items:stretch">
+            <button type="button" data-r="외근 후 바로 퇴근">🚗 ${T("외근 후 바로 퇴근","ไปทำงานข้างนอกแล้วกลับบ้านเลย")}</button>
+            <button type="button" data-r="개인 사정">🙏 ${T("개인 사정","ธุระส่วนตัว")}</button>
+            <button type="button" data-r="지사장 허락">👍 ${T("지사장님께 미리 말씀드림","แจ้งผู้อำนวยการแล้ว")}</button>
+          </div>
+          <input id="erTxt" placeholder="${T("기타 (직접 입력)","อื่นๆ (พิมพ์เอง)")}" maxlength="80" style="margin-top:8px">
+          <div class="row"><button type="button" id="erC">${T("취소","ยกเลิก")}</button><button type="button" class="pri" id="erOk">${T("확인","ตกลง")}</button></div>`, w=>{
+            w.querySelectorAll("[data-r]").forEach(x=>x.onclick=()=>{ w.remove(); res(x.dataset.r); });
+            w.querySelector("#erOk").onclick=()=>{ const v=w.querySelector("#erTxt").value.trim(); if(!v){ w.querySelector("#erTxt").focus(); return; } w.remove(); res(v); };
+            w.querySelector("#erC").onclick=()=>{ w.remove(); res(null); };
+            w.addEventListener("click",e=>{ if(e.target===w) res(null); });
+          }));
+        if (reason===null){ b.disabled=false; b.textContent=T("🏠 퇴근","🏠 กลับบ้าน"); return; }
+        data.early = reason.slice(0,80);
+      }
+    }
     if (isOut){ const rule = otRule(hm2m(data.checkout));
       if (rule){
         const pick = await new Promise(res=>admModal(`<h3>🌙 ${T("오늘 야근 수고했어요!","วันนี้ทำงานล่วงเวลา ขอบคุณมากครับ!")}</h3>
