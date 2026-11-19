@@ -926,7 +926,8 @@ function render(){
       <div><div class="rack" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><div class="lbl">${T("서버실","ห้องเซิร์ฟเวอร์")}</div></div>
       <div class="dr">${(()=>{ const ds=dirStatus(date), bk=phaseOf(date)==="work"?breakOf(date):null;
         const away = ds.status!=="in" || bk;
-        const msg = bk ? T(bk.bub_ko, bk.bub_th) : ds.status==="meeting" ? T(`🚗 외부 미팅 중 · ${ds.time||""}부터`,`🚗 ประชุมข้างนอก · ตั้งแต่ ${ds.time||""}`) : ds.status==="out" ? T(`👋 퇴근 · ${ds.time||""}`,`👋 กลับบ้านแล้ว · ${ds.time||""}`) : "";
+        const lvMsg = ds.leave ? (ds.leave.ltype==="휴가" ? T(`🌴 휴가 중 · ${md(nextWorkday(ds.leave.to||ds.leave.from))} 복귀`,`🌴 ลาพักร้อน · กลับ ${md(nextWorkday(ds.leave.to||ds.leave.from))}`) : T("🌴 연차","🌴 ลางาน")) : "";
+        const msg = ds.status==="leave" ? lvMsg : bk ? T(bk.bub_ko, bk.bub_th) : ds.status==="meeting" ? T(`🚗 외부 미팅 중 · ${ds.time||""}부터`,`🚗 ประชุมข้างนอก · ตั้งแต่ ${ds.time||""}`) : ds.status==="out" ? T(`👋 퇴근 · ${ds.time||""}`,`👋 กลับบ้านแล้ว · ${ds.time||""}`) : "";
         return away ? `<button class="desk" data-id="dr" aria-label="지사장">
         <div class="bubble idle"><div class="txt">${msg}</div></div>${emptyDesk(null, deskTypeOf("dr"))}
         <div class="nameplate">` : `<button class="desk working" data-id="dr" aria-label="지사장">
@@ -1010,7 +1011,7 @@ function streetSVG(){
 
 function renderBreak(el, date, brk){
   const people = D.staff.filter(st=>!absence(st.id,date) && st.sprite?.sit && !lateStart(st.id,date) && personPhase(st.id,date)!=="after");
-  if (brk.id==="worship" || dirStatus(date).status==="in") people.push({id:"dr", name:T(D.director.label, D.director.label_th||D.director.label), sprite:D.director.sprite});
+  if ((brk.id==="worship" && dirStatus(date).status!=="leave") || dirStatus(date).status==="in") people.push({id:"dr", name:T(D.director.label, D.director.label_th||D.director.label), sprite:D.director.sprite});
   el.hidden = false;
   const n = people.length;
   const rows = brk.id==="worship" ? 2 : 1;
@@ -1076,10 +1077,25 @@ function taskList(arr){
 }
 
 /* 지사장 상태: 출근 / 미팅 중 / 퇴근 (관리자만 변경, office_events/director_status) */
+function nextWorkday(d){ let x=addDays(d,1); while(isWkend(x)) x=addDays(x,1); return x; }
+function dirLeave(date){ return Object.entries(FEV).map(([k,e])=>({...e,_id:k})).find(e=>e.kind==="dirleave" && date>=e.from && date<=(e.to||e.from)); }
 function dirStatus(date){
+  const lv = dirLeave(date); if (lv) return {status:"leave", leave:lv};
   if (date!==D.current) return {status:"in"};
   const s = FEV.director_status; if (!s || s.date!==D.current) return {status:"in"};
   return s;
+}
+
+async function addDirLeave(){
+  const t=document.getElementById("dlT").value, f=document.getElementById("dlF").value, e=document.getElementById("dlE").value, m=document.getElementById("dlM");
+  if(!f){ m.textContent="시작일을 골라 주세요."; return; }
+  if(e && e<f){ m.textContent="끝나는 날이 시작일보다 빨라요."; return; }
+  const data={kind:"dirleave", ltype:t, from:f, to:e||f, at:ffs.serverTimestamp()};
+  try{ await ffs.addDoc(ffs.collection(fdb,"office_events"), data); openDrawer("dr"); }catch(x){ m.textContent="저장하지 못했어요."; }
+}
+async function delDirLeave(k, btn){
+  if(btn.dataset.ok!=="1"){ btn.dataset.ok="1"; btn.textContent="삭제?"; return; }
+  try{ await ffs.deleteDoc(ffs.doc(fdb,"office_events",k)); openDrawer("dr"); }catch(x){ btn.textContent="✕"; }
 }
 async function setDirStatus(status){
   const n=nowBKK(), t=`${String(n.getUTCHours()).padStart(2,"0")}:${String(n.getUTCMinutes()).padStart(2,"0")}`;
@@ -1092,7 +1108,15 @@ function openDrawer(id){
     document.getElementById("dbody").innerHTML = `
       <div class="dhead">${avatar({id:"dr"}, "working", false)}<div><h2>${esc(T(D.director.label, D.director.label_th||D.director.label))}</h2><div class="meta">${T("지사장실","ห้องผู้อำนวยการ")}</div></div></div>
       ${adminUser && fdb ? (()=>{ const cur=dirStatus(D.current).status; const b=(k,ic,ko)=>`<button type="button" class="editbtn" style="${cur===k?"":"background:#fff;color:var(--ink);border:1px solid #ccc"}" onclick="setDirStatus('${k}').then(()=>openDrawer('dr'))">${ic} ${ko}${cur===k?" ✓":""}</button>`;
-        return `<h3>지금 상태</h3>${b("in","🏢","출근 · 자리에 있음")}${b("meeting","🚗","외부 미팅 · 자리 비움")}${b("out","👋","퇴근")}`; })() : `<p class="hint">${T("지사장님 상태는 관리자 모드에서 바꿀 수 있어요.","")}</p>`}
+        const lv = Object.entries(FEV).filter(([k,e])=>e.kind==="dirleave" && (e.to||e.from)>=D.current).sort((x,y)=>x[1].from.localeCompare(y[1].from));
+        return `<h3>지금 상태</h3>${b("in","🏢","출근 · 자리에 있음")}${b("meeting","🚗","외부 미팅 · 자리 비움")}${b("out","👋","퇴근")}
+        <h3>🌴 연차·휴가 등록</h3>
+        <div class="ef"><div class="row" style="grid-template-columns:1fr">
+          <div class="sels"><select id="dlT"><option value="연차">연차 (하루)</option><option value="휴가">휴가 (여러 날)</option></select></div>
+          <div class="sels" style="align-items:center"><input id="dlF" type="date" value="${D.current}" style="border:1px solid #ddd;border-radius:8px;padding:6px"> ~ <input id="dlE" type="date" style="border:1px solid #ddd;border-radius:8px;padding:6px"></div>
+          <p class="hint" style="margin:0">하루짜리면 끝나는 날은 비워 두세요.</p>
+          <button type="button" class="add" onclick="addDirLeave()">+ 등록</button><p class="msg" id="dlM"></p></div></div>
+        ${lv.length?`<ul class="tasks">${lv.map(([k,e])=>`<li><b>🌴 ${esc(e.ltype)}</b> ${md(e.from)}${e.to&&e.to!==e.from?"~"+md(e.to):""} <button type="button" class="del" onclick="delDirLeave('${k}',this)" title="삭제">✕</button></li>`).join("")}</ul>`:""}`; })() : `<p class="hint">${T("지사장님 상태는 관리자 모드에서 바꿀 수 있어요.","")}</p>`}
       ${imgOf(id)?"":`<h3>캐릭터 꾸미기</h3><div id="pickerWrap">${pickerHTML(id)}</div>`}`;
     showDrawer(); return;
   }
@@ -1405,7 +1429,7 @@ function evDate(s){ const d=parse(s); return `${d.getUTCMonth()+1}/${d.getUTCDat
 function dayDiff(a,b){ return Math.round((parse(a)-parse(b))/864e5); }
 function boardItems(){
   const today=D.current;
-  const all=[...(D.events||[]).map(e=>({...e,src:"file"})), ...(D.notices||[]).map(e=>({...e,kind:"notice",src:"file"})), ...Object.entries(FEV).filter(([k,e])=>e.kind!=="status").map(([k,e])=>({...e,_id:k,src:"fb"}))];
+  const all=[...(D.events||[]).map(e=>({...e,src:"file"})), ...(D.notices||[]).map(e=>({...e,kind:"notice",src:"file"})), ...Object.entries(FEV).filter(([k,e])=>e.kind!=="status" && e.kind!=="dirleave").map(([k,e])=>({...e,_id:k,src:"fb"}))];
   const notices=all.filter(e=>e.kind==="notice" && (!e.until || e.until>=today) && (!e.date || e.date<=today || true)).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
   const events=all.filter(e=>e.kind!=="notice" && e.date && (e.end||e.date)>=today).sort((a,b)=>a.date.localeCompare(b.date));
   return {notices, events};
