@@ -171,6 +171,18 @@
        "w": 132,
        "h": 260
       }
+     },
+     "idle": {
+      "yawn": {
+       "src": "sprites/jay_w_yawn.png",
+       "w": 132,
+       "h": 260
+      },
+      "puzzle": {
+       "src": "sprites/jay_w_puzzle.png",
+       "w": 132,
+       "h": 260
+      }
      }
     }
    },
@@ -243,6 +255,18 @@
        "w": 137,
        "h": 260
       }
+     },
+     "idle": {
+      "yawn": {
+       "src": "sprites/aey_w_yawn.png",
+       "w": 137,
+       "h": 260
+      },
+      "puzzle": {
+       "src": "sprites/aey_w_puzzle.png",
+       "w": 137,
+       "h": 260
+      }
      }
     }
    },
@@ -312,6 +336,18 @@
       },
       "coffee": {
        "src": "sprites/ox_w_coffee.png",
+       "w": 143,
+       "h": 260
+      }
+     },
+     "idle": {
+      "yawn": {
+       "src": "sprites/ox_w_yawn.png",
+       "w": 143,
+       "h": 260
+      },
+      "puzzle": {
+       "src": "sprites/ox_w_puzzle.png",
        "w": 143,
        "h": 260
       }
@@ -388,6 +424,18 @@
        "w": 173,
        "h": 260
       }
+     },
+     "idle": {
+      "yawn": {
+       "src": "sprites/mud_w_yawn.png",
+       "w": 173,
+       "h": 260
+      },
+      "puzzle": {
+       "src": "sprites/mud_w_puzzle.png",
+       "w": 173,
+       "h": 260
+      }
      }
     }
    },
@@ -457,6 +505,18 @@
       },
       "coffee": {
        "src": "sprites/mild_w_coffee.png",
+       "w": 130,
+       "h": 260
+      }
+     },
+     "idle": {
+      "yawn": {
+       "src": "sprites/mild_w_yawn.png",
+       "w": 130,
+       "h": 260
+      },
+      "puzzle": {
+       "src": "sprites/mild_w_puzzle.png",
        "w": 130,
        "h": 260
       }
@@ -534,6 +594,18 @@
        "w": 139,
        "h": 260
       }
+     },
+     "idle": {
+      "yawn": {
+       "src": "sprites/hand_w_yawn.png",
+       "w": 139,
+       "h": 260
+      },
+      "puzzle": {
+       "src": "sprites/hand_w_puzzle.png",
+       "w": 139,
+       "h": 260
+      }
      }
     }
    },
@@ -604,6 +676,18 @@
       },
       "think": {
        "src": "sprites/keep_w_think.png",
+       "w": 153,
+       "h": 260
+      }
+     },
+     "idle": {
+      "yawn": {
+       "src": "sprites/keep_w_yawn.png",
+       "w": 153,
+       "h": 260
+      },
+      "puzzle": {
+       "src": "sprites/keep_w_puzzle.png",
        "w": 153,
        "h": 260
       }
@@ -680,6 +764,18 @@
        "w": 141,
        "h": 260
       }
+     },
+     "idle": {
+      "yawn": {
+       "src": "sprites/pin_w_yawn.png",
+       "w": 141,
+       "h": 260
+      },
+      "puzzle": {
+       "src": "sprites/pin_w_puzzle.png",
+       "w": 141,
+       "h": 260
+      }
      }
     }
    },
@@ -750,6 +846,18 @@
       },
       "phone": {
        "src": "sprites/blue_w_phone.png",
+       "w": 125,
+       "h": 260
+      }
+     },
+     "idle": {
+      "yawn": {
+       "src": "sprites/blue_w_yawn.png",
+       "w": 125,
+       "h": 260
+      },
+      "puzzle": {
+       "src": "sprites/blue_w_puzzle.png",
        "w": 125,
        "h": 260
       }
@@ -826,6 +934,18 @@
        "w": 106,
        "h": 260
       }
+     },
+     "idle": {
+      "yawn": {
+       "src": "sprites/chat_w_yawn.png",
+       "w": 106,
+       "h": 260
+      },
+      "puzzle": {
+       "src": "sprites/chat_w_puzzle.png",
+       "w": 106,
+       "h": 260
+      }
      }
     }
    },
@@ -896,6 +1016,18 @@
       },
       "coffee": {
        "src": "sprites/bee_w_coffee.png",
+       "w": 105,
+       "h": 260
+      }
+     },
+     "idle": {
+      "yawn": {
+       "src": "sprites/bee_w_yawn.png",
+       "w": 105,
+       "h": 260
+      },
+      "puzzle": {
+       "src": "sprites/bee_w_puzzle.png",
        "w": 105,
        "h": 260
       }
@@ -972,6 +1104,18 @@
        "w": 123,
        "h": 260
       }
+     },
+     "idle": {
+      "yawn": {
+       "src": "sprites/jong_w_yawn.png",
+       "w": 123,
+       "h": 260
+      },
+      "puzzle": {
+       "src": "sprites/jong_w_puzzle.png",
+       "w": 123,
+       "h": 260
+      }
      }
     }
    },
@@ -1042,6 +1186,18 @@
       },
       "coffee": {
        "src": "sprites/name_w_coffee.png",
+       "w": 118,
+       "h": 260
+      }
+     },
+     "idle": {
+      "yawn": {
+       "src": "sprites/name_w_yawn.png",
+       "w": 118,
+       "h": 260
+      },
+      "puzzle": {
+       "src": "sprites/name_w_puzzle.png",
        "w": 118,
        "h": 260
       }

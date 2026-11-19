@@ -630,9 +630,10 @@ function spriteAvatar(sp, state, withDesk, mode){
       <g class="${mode==='run'?'runner':'stroller'}"><image href="${s.src}" x="${cx-W/2}" y="${137-H}" width="${W}" height="${H}"/></g></svg>`;
   }
   const wk = sp.work, s = wk ? wk.frames.sit : sp.sit, H = 132, W = s.w*H/s.h, top = DESK_LINE - H*(wk ? wk.hy : 0.6);
+  const idleSet = !!(wk && wk.idle && state==="idle");   // 아직 업무 입력 전: 하품·갸웃 동작
   const cid = "clip" + (++_clipN);
   return `<svg viewBox="0 0 140 138" aria-hidden="true"><defs><clipPath id="${cid}"><rect x="0" y="-40" width="140" height="${118+40}"/></clipPath></defs>
-    <g clip-path="url(#${cid})"><g class="bob"><image ${wk?`class="anim" data-frames='${esc(JSON.stringify(Object.fromEntries(Object.entries(wk.frames).map(([k,v])=>[k,v.src]))))}'`:""} href="${s.src}" x="${70-W/2}" y="${top}" width="${W}" height="${H}"/></g></g>
+    <g clip-path="url(#${cid})"><g class="bob"><image ${wk?`class="anim" ${idleSet?'data-idle="1"':''} data-frames='${esc(JSON.stringify(idleSet ? {sit:wk.frames.sit.src, yawn:wk.idle.yawn.src, puzzle:wk.idle.puzzle.src} : Object.fromEntries(Object.entries(wk.frames).map(([k,v])=>[k,v.src]))))}'`:""} href="${s.src}" x="${70-W/2}" y="${top}" width="${W}" height="${H}"/></g></g>
     ${deskImg(sp._desk)}
     ${extras?`<g transform="translate(${70+W/2-4},${top+6})">${extras}</g>`:""}</svg>`;
 }
@@ -926,7 +927,7 @@ function render(){
     if (!has){
       b.innerHTML = mode==="run" ? `<div class="txt">${T("🏃 출근하는 중!","🏃 กำลังมาทำงาน!")}</div>`
         : b.dataset.in && date===D.current ? `<div class="txt">✅ ${b.dataset.in} ${T("출근 · 할 일 보고 전","เข้างาน · ยังไม่ส่งงานวันนี้")}</div>`
-        : date<D.current ? `<div class="txt">${T("📭 이날 보고 없음","📭 วันนั้นไม่มีรายงาน")}</div>` : `<div class="txt">${T("📝 오늘 할 일 보고 전","📝 ยังไม่ส่งงานวันนี้")}</div>`;
+        : date<D.current ? `<div class="txt">${T("📭 이날 보고 없음","📭 วันนั้นไม่มีรายงาน")}</div>` : `<div class="txt">${T("☕ 오늘 할 일 입력 전","☕ ยังไม่ได้ใส่งานวันนี้")}</div>`;
       return;
     }
     const list = [...wb, ...bubbleOrder(r)]; cyc[b.dataset.id] = {b,list,i:0};
@@ -1095,8 +1096,16 @@ function animTick(){
     if (!st){
       let f = {}; try { f = JSON.parse(el.dataset.frames); } catch(e){ return; }
       Object.values(f).forEach(src=>{ if(!_preloaded.has(src)){ const i=new Image(); i.src=src; _preloaded.add(src);} });
-      st = {f, mode:"type", until: now + 3000 + Math.random()*5000, flip:false, last:0};
+      const idle = el.dataset.idle==="1";
+      st = {f, idle, mode: idle ? "sit" : "type", until: now + (idle ? 1500 + Math.random()*3500 : 3000 + Math.random()*5000), flip:false, last:0};
       _animState.set(el, st);
+    }
+    if (st.idle){
+      if (now > st.until){
+        if (st.mode==="sit"){ st.mode = Math.random()<0.5 ? "yawn" : "puzzle"; st.until = now + 2200 + Math.random()*1800; }
+        else { st.mode = "sit"; st.until = now + 3000 + Math.random()*4000; }
+      }
+      const isrc = st.f[st.mode] || st.f.sit; if (el.getAttribute("href") !== isrc) el.setAttribute("href", isrc); return;
     }
     if (now > st.until){
       if (st.mode==="type"){
