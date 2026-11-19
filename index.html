@@ -1097,6 +1097,7 @@ function openDrawer(id){
     ${r?taskList(r.tasks):`<div class="empty">${T("💤 이날은 아직 보고가 없어요","💤 ยังไม่มีรายงาน")}</div>`}
     ${canEdit(date)?`<button class="editbtn" type="button" onclick="openEdit('${id}')">📝 ${T("오늘 업무 업데이트","อัปเดตงานวันนี้")}</button>`:""}
     ${canEdit(date) && checkoutMin(id,date)==null ? `<button class="editbtn" type="button" style="background:#f47a1a" onclick="openEdit('${id}','out')">🏠 ${T("퇴근하기","กลับบ้าน")}</button>` : ""}
+    ${adminUser && fdb && checkoutMin(id,date)!=null ? `<button class="editbtn" type="button" style="background:#fff;color:#a33;border:1px solid #e3b4b4" onclick="undoCheckout('${id}','${date}',this)">↩️ 퇴근 취소 (관리자) · ${esc(STAFF_DOCS[date+"_"+id].checkout)}</button>` : ""}
     ${r?.routine?.length && LANG!=="th"?`<h3>일상 업무</h3><div class="routine">${r.routine.map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
     ${prevNote}
     <h3>${T("이번 주 목표","เป้าหมายสัปดาห์นี้")} <small>${label(wk)}${T(" 주","")}</small></h3>${taskList(weekGoals(id,date))}
@@ -1265,6 +1266,12 @@ function parseLine(text, st){
     out.push({p:guessProj(l), txt:l, s});
   });
   return out.slice(0,20);
+}
+
+async function undoCheckout(id, date, btn){
+  if (btn.dataset.ok!=="1"){ btn.dataset.ok="1"; btn.textContent="한 번 더 누르면 퇴근 처리가 취소돼요 (할 일은 그대로)"; return; }
+  try{ await ffs.updateDoc(ffs.doc(fdb,"office_reports",date+"_"+id), {checkout:ffs.deleteField(), early:ffs.deleteField(), ot:ffs.deleteField(), at:ffs.serverTimestamp()}); openDrawer(id); }
+  catch(e){ btn.textContent="취소하지 못했어요"; }
 }
 function openEdit(id, kind){
   const isW = kind==="week";
