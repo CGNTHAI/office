@@ -1334,7 +1334,8 @@ function openEdit(id, kind){
       const com = hm2m(data.checkout), endM = hm2m(D.hours.end);
       const ot = otOf(id, date), pmHalf = (D.absences||[]).some(x=>x.id===id && x.half==="pm" && date>=x.from && date<=x.to);
       const otOk = ot && ot.pick!=="late" && com >= hm2m(ot.out) - 30;
-      if (com < endM && !otOk && !pmHalf){
+      const halfOk = pmHalf && com >= 12*60+30;   // 오후 반차는 12:30부터만 반차 퇴근으로 인정
+      if (com < endM && !otOk && !halfOk){
         const reason = await new Promise(res=>admModal(`<h3>🏠 ${T("오늘은 일찍 퇴근하시네요","วันนี้กลับก่อนเวลานะครับ")}</h3>
           <p>${T("이유를 골라 주세요. (지사장님만 볼 수 있어요)","กรุณาเลือกเหตุผลครับ (ผู้อำนวยการเท่านั้นที่เห็น)")}</p>
           <div class="row" style="flex-direction:column;align-items:stretch">
