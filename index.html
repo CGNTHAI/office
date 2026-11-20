@@ -177,9 +177,8 @@ body[data-sky=night] .wallstrip{background-color:#9fb8b4}
 .annex .lbl{font-size:12px;color:var(--ink-soft);margin-top:4px}
 .dr{background-color:#fff7e3 !important}
 .srv{background:none;border:0;padding:0;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;align-items:center}
-.srvst{font-size:11px;font-weight:700;margin-top:4px;white-space:nowrap;background:#fff;color:var(--ink);border-radius:10px;padding:2px 9px}.srv.off .srvst{background:#6b6880;color:#e9e7f3}.srvby{font-size:10px;color:#d6d3e6;white-space:nowrap;margin-top:2px}
+.srvst{font-size:11px;font-weight:700;margin-top:2px;white-space:nowrap;color:var(--ink)}.srv.off .srvst{color:var(--ink-soft)}.srvby{font-size:10px;color:var(--ink-soft);white-space:nowrap}
 .srv.off .rack i::after{background:#3a3846!important;animation:none}
-.srv.off .rack{opacity:.75}
 .srv:hover .rack{outline:2px solid #ffc531;outline-offset:2px}
 .rack{width:44px;height:64px;border-radius:5px;background:#3b3846;display:flex;flex-direction:column;gap:5px;padding:7px 6px}
 .rack i{height:8px;border-radius:2px;background:#58556a;position:relative}
@@ -938,9 +937,9 @@ function render(){
     <div class="annex">
       ${(()=>{ const on = !!(SERVER && SERVER.on); const who = SERVER && SERVER.by ? personName(SERVER.by) : "";
         const tm = SERVER && SERVER.at && SERVER.at.toDate ? (d=>`${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`)(SERVER.at.toDate()) : "";
-        return `<button type="button" class="srv ${on?"on":"off"}" onclick="toggleServer()" aria-label="${T("서버 켜기/끄기","เปิด/ปิดเซิร์ฟเวอร์")}">
+        return `<div><button type="button" class="srv ${on?"on":"off"}" onclick="toggleServer()" aria-label="${T("서버 켜기/끄기","เปิด/ปิดเซิร์ฟเวอร์")}">
         <div class="rack" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><div class="lbl">${T("서버실","ห้องเซิร์ฟเวอร์")}</div>
-        <div class="srvst">${on ? T("🟢 켜짐","🟢 เปิดอยู่") : T("⚫ 꺼짐","⚫ ปิดอยู่")}</div>${who||tm ? `<div class="srvby">${esc(who)}${who&&tm?" · ":""}${tm}</div>` : ""}</button>`; })()}
+        <div class="srvst">${on ? T("🟢 켜짐","🟢 เปิดอยู่") : T("⚫ 꺼짐","⚫ ปิดอยู่")}</div>${who||tm ? `<div class="srvby">${esc(who)}${who&&tm?" · ":""}${tm}</div>` : ""}</button></div>`; })()}
       <div class="dr">${(()=>{ const ds=dirStatus(date), bk=phaseOf(date)==="work"?breakOf(date):null;
         const cm = dirCommuting(date);
         const away = (ds.status==="custom" ? ds.away : ds.status!=="in") || bk || cm;
