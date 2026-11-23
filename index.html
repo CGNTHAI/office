@@ -43,6 +43,9 @@ button{font:inherit;color:inherit}
 .ef .row textarea{grid-column:1/-1;width:100%;box-sizing:border-box;border:1px solid #ddd;border-radius:8px;padding:8px;font-size:15px;font-family:inherit;resize:vertical;min-height:40px}
 .ef .row textarea.rn{grid-column:1/-1;width:100%;box-sizing:border-box;border:1px dashed #c9c2b5;border-radius:8px;padding:7px 8px;font-size:14px;font-family:inherit;resize:vertical;min-height:34px;background:#fffdf8}
 .ef .row .sels{display:flex;gap:6px;flex-wrap:wrap}
+.ef .wkl{grid-column:1/-1;font-size:12px;color:#8a5a00;font-weight:600}
+.ef .wkb{background:#fff7e0;border-color:#e6c15a}
+.wkpick{display:flex;flex-direction:column;gap:8px;margin:10px 0;max-height:50vh;overflow:auto}.wkpick label{display:flex;gap:8px;align-items:flex-start;font-size:14px;background:#f6f3ee;border-radius:10px;padding:8px}.wkpick input{width:auto!important;flex:none;margin:3px 0 0;padding:0}.wkpick span{flex:1;text-align:left}.wkpick em{font-style:normal;font-size:11px;margin-left:auto;white-space:nowrap}
 .ef .rpc{border:1px solid #ddd;border-radius:8px;padding:6px;font-size:14px;width:9.5em;font-family:inherit}
 .ef select{border:1px solid #ddd;border-radius:8px;padding:6px;font-size:14px;background:#fff;max-width:100%}
 .ef .del{border:0;background:transparent;font-size:18px;cursor:pointer;color:#a33}
@@ -1401,6 +1404,23 @@ function parseLine(text, st){
   return out.slice(0,20);
 }
 
+/* 오늘 업무 → 연결된 주간 목표 상태 반영 (🏁 최종 완료만 주간 완료, 나머지는 진행 중/도움 필요) */
+async function syncWeek(id, date, tasks){
+  const linked = tasks.filter(t=>t.wk); if(!linked.length) return;
+  const mon = monday(date), wid = "week_"+mon+"_"+id;
+  const goals = clone(weekGoals(id,date)||[]); if(!goals.length) return;
+  let changed = false;
+  goals.forEach((g,i)=>{ const k = g.k || ("i"+i);
+    const t = linked.find(x=>x.wk===k); if(!t) return;
+    if(!g.k){ g.k = k; changed = true; }
+    const ns = t.s==="final" ? "final" : t.s==="blocked" ? "blocked" : (t.s==="done"||t.s==="doing") ? "doing" : null;
+    if(ns && g.s!=="final" && g.s!==ns){ g.s = ns; changed = true; }
+    if(t.s==="final" && g.s!=="final"){ g.s="final"; changed = true; }
+  });
+  if(!changed) return;
+  const prev = STAFF_DOCS[wid]||{};
+  try{ await ffs.setDoc(ffs.doc(fdb,"office_reports",wid), {...prev, date:mon, id, tasks:goals.slice(0,20), at:ffs.serverTimestamp()}); }catch(e){ console.warn("syncWeek", e); }
+}
 async function undoCheckout(id, date, btn){
   if (btn.dataset.ok!=="1"){ btn.dataset.ok="1"; btn.textContent="한 번 더 누르면 퇴근 처리가 취소돼요 (할 일은 그대로)"; return; }
   try{ await ffs.updateDoc(ffs.doc(fdb,"office_reports",date+"_"+id), {checkout:ffs.deleteField(), early:ffs.deleteField(), ot:ffs.deleteField(), at:ffs.serverTimestamp()}); openDrawer(id); }
@@ -1413,7 +1433,7 @@ function openEdit(id, kind){
   const night = isOut && nowMin() < 5*60;               // 자정 넘어 퇴근: 전날 업무로 기록
   const date = isW ? monday(dates[idx]) : night ? addDays(D.current,-1) : dates[idx], r = isW ? {tasks: weekGoals(id,dates[idx])||[]} : report(id,date);
   const docId = (isW?"week_":"") + date + "_" + id;
-  const rows = (r?.tasks||[]).map(t=>({p:t.p||"", txt:tText(t), s:t.s||"plan", note:noteText(t), orig:t}));
+  const rows = (r?.tasks||[]).map(t=>({p:t.p||"", txt:tText(t), s:t.s||"plan", note:noteText(t), orig:t, wk:t.wk||""}));
   if(!rows.length) rows.push({p:"",txt:"",s:"plan"});
   const ci = ((D.checkin||{})[date]||{})[id];
   const projOpts = sel => { const isC = typeof sel==="string" && sel.startsWith("c:");
@@ -1422,7 +1442,7 @@ function openEdit(id, kind){
       + `<option value="__c" ${isC?"selected":""}>✏️ ${T("직접 입력","พิมพ์เอง")}</option>`; };
   const pcVal = p => typeof p==="string" && p.startsWith("c:") ? esc(p.slice(2)) : "";
   const stOpts = sel => ["plan","doing","done","final","blocked","moved"].map(k=>`<option value="${k}" ${k===sel?"selected":""}>${esc(stLabel(k))}</option>`).join("");
-  const rowHTML = rw => `<div class="row"><div class="sels"><select class="rp" title="${T("프로그램","รายการ")}">${projOpts(rw.p || (rw.txt ? guessProj(rw.txt) : ""))}</select><input class="rpc" maxlength="30" placeholder="${T("프로젝트 이름","ชื่อโปรเจกต์")}" value="${pcVal(rw.p)}" ${String(rw.p||"").startsWith("c:")?"":"hidden"}><select class="rs">${stOpts(rw.s)}</select></div><button type="button" class="del" title="ลบ">✕</button><textarea class="rt" rows="2" placeholder="${T("할 일을 적어 주세요","พิมพ์งานที่จะทำ")}">${esc(rw.txt)}</textarea><textarea class="rn" rows="2" ${(rw.s||"plan")==="plan"?"hidden":""} placeholder="${T("💬 진행 상황 설명 (선택)","💬 อธิบายความคืบหน้า (ไม่บังคับ)")}">${esc(rw.note||"")}</textarea></div>`;
+  const rowHTML = rw => `<div class="row" ${rw.wk?`data-wk="${esc(rw.wk)}"`:""}>${rw.wk?`<div class="wkl">🎯 ${T("이번 주 목표와 연결됨","เชื่อมกับเป้าหมายสัปดาห์")}</div>`:""}<div class="sels"><select class="rp" title="${T("프로그램","รายการ")}">${projOpts(rw.p || (rw.txt ? guessProj(rw.txt) : ""))}</select><input class="rpc" maxlength="30" placeholder="${T("프로젝트 이름","ชื่อโปรเจกต์")}" value="${pcVal(rw.p)}" ${String(rw.p||"").startsWith("c:")?"":"hidden"}><select class="rs">${stOpts(rw.s)}</select></div><button type="button" class="del" title="ลบ">✕</button><textarea class="rt" rows="2" placeholder="${T("할 일을 적어 주세요","พิมพ์งานที่จะทำ")}">${esc(rw.txt)}</textarea><textarea class="rn" rows="2" ${(rw.s||"plan")==="plan"?"hidden":""} placeholder="${T("💬 진행 상황 설명 (선택)","💬 อธิบายความคืบหน้า (ไม่บังคับ)")}">${esc(rw.note||"")}</textarea></div>`;
   const nowHM = () => { const n=nowBKK(); return String(n.getUTCHours()).padStart(2,"0")+":"+String(n.getUTCMinutes()).padStart(2,"0"); };
   document.getElementById("dbody").innerHTML = `
     <div class="dhead">${avatar(st, stateOf(r), false)}<div><h2>${esc(st.name)}</h2><div class="meta">${isW ? `${T("이번 주 목표","เป้าหมายสัปดาห์นี้")} · ${label(date)}${T(" 주","")}` : label(date)}</div></div></div>
@@ -1436,6 +1456,7 @@ function openEdit(id, kind){
       <div id="mOne">
         <div id="rows">${rows.map(rowHTML).join("")}</div>
         <button type="button" class="add" id="addRow">+ ${T("할 일 추가","เพิ่มงาน")}</button>
+        ${!isW && (weekGoals(id,date)||[]).length ? `<button type="button" class="add wkb" id="fromWeek">🎯 ${T("이번 주 목표에서 가져오기","ดึงจากเป้าหมายสัปดาห์นี้")}</button>` : ""}
         <p class="hint">${T("내용과 상태를 확인하고 저장하세요.","ตรวจสอบงานและสถานะ แล้วกดบันทึก")}</p>
       </div>
       <div class="acts"><button type="button" id="efCancel">${T("취소","ยกเลิก")}</button><button type="submit" class="pri" id="efSave">${isOut ? T("🏠 퇴근","🏠 กลับบ้าน") : T("저장","บันทึก")}</button></div>${isOut?`<p class="hint">${T("오늘 한 일의 상태를 정리하고 퇴근을 누르세요.","อัปเดตสถานะงานวันนี้ แล้วกด กลับบ้าน")}</p>`:""}
@@ -1458,6 +1479,24 @@ function openEdit(id, kind){
     f.querySelector("#rows").insertAdjacentHTML("beforeend", items.map(rowHTML).join("")); bindDel();
     box.value=""; f.querySelector("#efMsg").textContent=""; setMode("one");
   };
+  const fw = f.querySelector("#fromWeek");
+  if (fw) fw.onclick = () => {
+    const goals = (weekGoals(id,date)||[]).map((g,i)=>({g,i})).filter(({g})=>g.s!=="final");
+    const used = new Set([...f.querySelectorAll("#rows .row[data-wk]")].map(r=>r.dataset.wk));
+    if(!goals.length){ alertLite(T("남은 주간 목표가 없어요","ไม่มีเป้าหมายที่เหลือครับ")); return; }
+    admModal(`<h3>🎯 ${T("오늘 할 목표를 골라 주세요","เลือกเป้าหมายที่จะทำวันนี้")}</h3>
+      <div class="wkpick">${goals.map(({g,i})=>{ const k=g.k||("i"+i); return `<label><input type="checkbox" value="${i}" ${used.has(k)?"checked disabled":""}> <span>${esc(tText(g))}</span> <em style="color:${proj(g.p).color}">${esc(proj(g.p).ko)}</em></label>`; }).join("")}</div>
+      <div class="row"><button type="button" id="wkX">${T("취소","ยกเลิก")}</button><button type="button" class="pri" id="wkOk">${T("가져오기","ดึงมา")}</button></div>`, w=>{
+      w.querySelector("#wkX").onclick=()=>w.remove();
+      w.querySelector("#wkOk").onclick=()=>{
+        const pick=[...w.querySelectorAll("input:checked:not(:disabled)")].map(x=>+x.value);
+        f.querySelectorAll("#rows .row").forEach(r=>{ if(!r.querySelector(".rt").value.trim()) r.remove(); });
+        const all = weekGoals(id,date)||[];
+        f.querySelector("#rows").insertAdjacentHTML("beforeend", pick.map(i=>{ const g=all[i], rw={p:g.p||"", txt:tText(g), s:"doing", wk:g.k||("i"+i), orig:{ko:g.ko||g.th, th:g.th||g.ko}}; rows.push(rw); return rowHTML(rw); }).join(""));
+        bindDel(); w.remove();
+      };
+    });
+  };
   f.querySelector("#efCancel").onclick = () => openDrawer(id);
   const rm = f.querySelector("#efRm");
   if(rm) rm.onclick = async () => { if(rm.dataset.ok!=="1"){ rm.dataset.ok="1"; rm.textContent="한 번 더 누르면 지워져요 (원래 보고로 돌아가요)"; return; }
@@ -1468,6 +1507,7 @@ function openEdit(id, kind){
       const p = pv==="__c" ? (pc ? "c:"+pc.slice(0,30) : guessProj(txt)) : (pv || guessProj(txt)), sv=row.querySelector(".rs").value;
       const o = rows.find(x=>x.orig && x.txt===txt)?.orig;
       const t = o ? {p, ko:o.ko||txt, th:o.th||txt, s:sv} : {p, ko:txt, th:txt, s:sv};
+      if (row.dataset.wk) t.wk = row.dataset.wk;
       const nt = sv==="plan" ? "" : row.querySelector(".rn").value.trim();
       if (nt){ if (o && nt===noteText(o)) { if(o.n) t.n=o.n; if(o.nth) t.nth=o.nth; } else { t.nth=nt; t.n=nt; } } else if (o && o.n && !o.nth && sv!=="plan" && LANG==="th") t.n=o.n;
       return t; }).filter(Boolean).slice(0,20);
@@ -1512,7 +1552,7 @@ function openEdit(id, kind){
         data.ot = pick;
       }
     }
-    try{ await ffs.setDoc(ffs.doc(fdb,"office_reports",docId), data); editId=id; openDrawer(id); }
+    try{ await ffs.setDoc(ffs.doc(fdb,"office_reports",docId), data); if(!isW) await syncWeek(id, date, tasks); editId=id; openDrawer(id); }
     catch(e){ f.querySelector("#efMsg").textContent=T("저장하지 못했어요. 잠시 후 다시 해 주세요.","บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"); b.disabled=false; b.textContent=T("저장","บันทึก"); }
   };
 }
