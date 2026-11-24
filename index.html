@@ -779,7 +779,7 @@ function absence(id, date){
     return true;
   });
 }
-const absIcon = a => a.type==="trip" ? "✈️" : (a.ko==="병가" || a.th==="ลาป่วย") ? "🏥" : "🌴";
+const absIcon = a => a.type==="trip" ? "✈️" : (String(a.ko||"").includes("병가") || String(a.th||"").includes("ลาป่วย")) ? "🏥" : "🌴";
 const showBack = a => a.type==="trip" || a.to > a.from;   // 하루짜리 연차·반차는 복귀일을 말하지 않음
 const md = s => { const d=parse(s); return `${d.getUTCMonth()+1}/${d.getUTCDate()}`; };
 function report(id, date){ return (D.days[date]||{})[id]; }
@@ -1217,13 +1217,15 @@ const ABS_KIND = {
   leave:  {ko:"연차", th:"ลางาน"},
   am:     {ko:"오전 반차", th:"ลาครึ่งวันเช้า", half:"am"},
   pm:     {ko:"오후 반차", th:"ลาครึ่งวันบ่าย", half:"pm"},
-  sick:   {ko:"병가", th:"ลาป่วย"},
+  sick:   {ko:"병가", th:"ลาป่วย", lbl:"병가 (하루)"},
+  sickam: {ko:"오전 병가", th:"ลาป่วยครึ่งวันเช้า", half:"am"},
+  sickpm: {ko:"오후 병가", th:"ลาป่วยครึ่งวันบ่าย", half:"pm"},
 };
 function absAdminHTML(id){
   const mine = Object.entries(FEV).filter(([k,e])=>e.kind==="absence" && e.id===id && e.to>=addDays(D.current,-7)).sort((a,b)=>a[1].from.localeCompare(b[1].from));
   const d = dates[idx] || D.current;
   return `<div class="absadm"><h3>📅 연차·병가 등록 <small>관리자</small></h3>
-    <div class="absk">${Object.entries(ABS_KIND).map(([k,v],i)=>`<label><input type="radio" name="absK" value="${k}" ${i?"":"checked"}> ${v.ko}</label>`).join("")}</div>
+    <div class="absk">${Object.entries(ABS_KIND).map(([k,v],i)=>`<label><input type="radio" name="absK" value="${k}" ${i?"":"checked"}> ${v.lbl||v.ko}</label>`).join("")}</div>
     <div class="absd"><input type="date" id="absF" value="${d}"> ~ <input type="date" id="absE" value="${d}"></div>
     <button type="button" class="editbtn" style="background:#2f8f4e" onclick="addAbs('${id}')">등록</button><div class="msg" id="absM"></div>
     ${mine.length ? `<ul class="absl">${mine.map(([k,e])=>`<li>${md(e.from)}${e.to>e.from?`~${md(e.to)}`:""} ${esc(e.ko)} <button type="button" onclick="delAbs('${k}','${id}',this)">✕</button></li>`).join("")}</ul>` : ""}
