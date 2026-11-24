@@ -1032,7 +1032,7 @@ function render(){
   },4200);
 
   const nDays = Object.keys(D.days).length;
-  document.getElementById("foot").textContent = T(`마지막 업데이트 ${D.updated} · 기록된 날 ${nDays}일 · 캐릭터를 누르면 자세히 볼 수 있어요`, `อัปเดตล่าสุด ${D.updated} · แตะที่ตัวละครเพื่อดูรายละเอียด`);
+  document.getElementById("foot").textContent = T("캐릭터를 누르면 자세히 볼 수 있어요", "แตะที่ตัวละครเพื่อดูรายละเอียด");
   const h1 = document.querySelector(".brand h1"); if (h1) h1.innerHTML = `<span class="wm" aria-label="CGN THAI">${WM_SVG}</span> ${T("오피스","ออฟฟิศ")}`;
   const sub = document.querySelector(".brand small"); if (sub) sub.textContent = T("오늘 누가 무엇을 하고 있나요?","วันนี้ใครทำอะไรอยู่บ้าง?");
   document.documentElement.lang = LANG; document.body.classList.toggle("staff", STAFF); renderEvents();
