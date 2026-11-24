@@ -422,7 +422,7 @@ body[data-sky=sunset] .street .sun{transform:translateY(40px);fill:#ff9a3c}
       <line id="mh" x1="31" y1="31" x2="31" y2="11" stroke="#2b2833" stroke-width="2.5" stroke-linecap="round"/>
       <circle cx="31" cy="31" r="3" fill="#ff7657"/>
     </svg>
-    <a class="wallcal" id="wallcal" href="../rental/#company" title="회사 일정"><svg viewBox="0 0 56 62" aria-hidden="true">
+    <a class="wallcal" id="wallcal" href="../rental/#company" target="_blank" rel="noopener" title="회사 일정"><svg viewBox="0 0 56 62" aria-hidden="true">
       <rect x="3" y="8" width="50" height="51" rx="6" fill="#fff" stroke="#2b2833" stroke-width="3"/>
       <path d="M3 14a6 6 0 0 1 6-6h38a6 6 0 0 1 6 6v8H3z" fill="#f05a4f" stroke="#2b2833" stroke-width="3"/>
       <rect x="14" y="3" width="5" height="11" rx="2.5" fill="#2b2833"/><rect x="37" y="3" width="5" height="11" rx="2.5" fill="#2b2833"/>
@@ -981,7 +981,7 @@ function render(){
         <div class="bubble">${customTxt ? (isPreset ? customTxt : `💬 ${customTxt}`) : STAFF ? T("오늘도 화이팅! 💪","วันนี้สู้ๆ นะครับ! 💪") : `오늘 보고 <b>${reported}</b>/${D.staff.length-away} 확인 중`}</div>
         ${avatar({id:"dr"},"working")}
         <div class="nameplate">`; })()}${esc(D.director.name||T(D.director.label, D.director.label_th))} <span class="kname">${esc(D.director.kname||"")}</span></div><div class="role">${T(D.director.label, D.director.label_th||D.director.label)}</div></button></div>
-      <div class="equip-room"><a class="equip" href="https://cgnthai.github.io/rental/" target="_blank" rel="noopener" aria-label="${T("장비실 — 장비 대여 페이지로 이동","ห้องอุปกรณ์ — ไปหน้ายืมอุปกรณ์")}">
+      <div class="equip-room"><a class="equip" href="https://cgnthai.github.io/rental/#equip" target="_blank" rel="noopener" aria-label="${T("장비실 — 장비 대여 페이지로 이동","ห้องอุปกรณ์ — ไปหน้ายืมอุปกรณ์")}">
         <svg class="equip-art" viewBox="0 0 120 78" aria-hidden="true">
           <rect x="4" y="66" width="112" height="6" rx="2" fill="#b27c4c"/>
           <g transform="translate(14 14)"><rect x="0" y="6" width="26" height="16" rx="3" fill="#2f2c38"/><circle cx="13" cy="14" r="6" fill="#57536a"/><circle cx="13" cy="14" r="3.2" fill="#9ad0ff"/><rect x="18" y="2" width="7" height="5" rx="1" fill="#2f2c38"/>
