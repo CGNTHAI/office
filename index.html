@@ -45,6 +45,9 @@ button{font:inherit;color:inherit}
 .ef .row .sels{display:flex;gap:6px;flex-wrap:wrap}
 .ef .wkl{grid-column:1/-1;font-size:12px;color:#8a5a00;font-weight:600}
 .ef .wkb{background:#fff7e0;border-color:#e6c15a}
+.absadm{margin-top:14px;padding:10px;border:1px dashed #9bd3b0;border-radius:12px;background:#f3fbf6}.absadm h3{margin:0 0 6px}
+.absk{display:flex;flex-wrap:wrap;gap:10px;font-size:14px;margin-bottom:6px}.absd{display:flex;gap:6px;align-items:center;font-size:14px;margin-bottom:6px}.absd input{flex:1;padding:5px;border:1px solid #ccc;border-radius:8px}
+.absl{list-style:none;padding:0;margin:8px 0 0;font-size:13px}.absl li{display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid #dfe9e2}.absl button{border:0;background:none;color:#a33;cursor:pointer}
 .wkpick{display:flex;flex-direction:column;gap:8px;margin:10px 0;max-height:50vh;overflow:auto}.wkpick label{display:flex;gap:8px;align-items:flex-start;font-size:14px;background:#f6f3ee;border-radius:10px;padding:8px}.wkpick input{width:auto!important;flex:none;margin:3px 0 0;padding:0}.wkpick span{flex:1;text-align:left}.wkpick em{font-style:normal;font-size:11px;margin-left:auto;white-space:nowrap}
 .ef .rpc{border:1px solid #ddd;border-radius:8px;padding:6px;font-size:14px;width:9.5em;font-family:inherit}
 .ef select{border:1px solid #ddd;border-radius:8px;padding:6px;font-size:14px;background:#fff;max-width:100%}
@@ -749,8 +752,10 @@ function emptyDesk(trip, type){
     ${trip==="trip"?`<g transform="translate(96,88)"><rect x="0" y="0" width="26" height="22" rx="4" fill="#ff8a5c"/><rect x="9" y="-5" width="8" height="6" rx="2" fill="none" stroke="#c45a33" stroke-width="2"/><rect x="0" y="9" width="26" height="3" fill="#c45a33"/><circle cx="5" cy="24" r="2" fill="#4d4a57"/><circle cx="21" cy="24" r="2" fill="#4d4a57"/></g>`:""}</svg>`;
 }
 /* ---------- data helpers ---------- */
+/* 그룹웨어 연차(data.json) + 관리자가 직접 넣은 연차·병가(office_events kind:absence) */
+const ABS = () => [...(D.absences||[]), ...Object.entries(FEV).filter(([k,e])=>e.kind==="absence").map(([k,e])=>({...e,_id:k}))];
 function absence(id, date){
-  return (D.absences||[]).find(a=>{
+  return ABS().find(a=>{
     if (a.id!==id || date<a.from || date>a.to) return false;
     if (a.half && date===D.current){ const m=nowMin(); return a.half==="am" ? m < 13*60+30 : m >= 12*60+30; }  // 오전 반차: 13:30까지, 오후 반차: 점심(12:30)부터
     return true;
@@ -871,7 +876,7 @@ function render(){
     <div class="chip">${T("완료","เสร็จแล้ว")} <b>${done}</b></div>
     <div class="chip">${T("도움 필요","ต้องการความช่วยเหลือ")} <b>${blocked}</b></div>
     ${alerts.length?`<div class="chip alert">살펴볼 일 <b>${alerts.length}</b></div>`:""}`;
-  const soon = (D.absences||[]).filter(a=>a.from>date && a.from<=addDays(date,7));
+  const soon = ABS().filter(a=>a.from>date && a.from<=addDays(date,7));
   document.getElementById("alerts").innerHTML = soon.map(a=>{const st=D.staff.find(s=>s.id===a.id);
     return `<button class="row info" data-id="${a.id}">${a.type==="trip"?"✈️":"🌴"} <b>${esc(st?.name||a.id)}</b> · ${a.from===a.to?md(a.from):md(a.from)+"–"+md(a.to)} ${esc(absKo(a))}${T(" 예정","")}${absWhere(a)?` (${esc(absWhere(a))})`:""}</button>`;}).join("") + alerts.map((a,i)=>`
     <button class="row ${a.t.s==='blocked'?'blocked':''}" data-id="${a.st.id}"><b>${esc(a.st.name)}</b> · ${esc(a.why)} — ${esc(a.t.ko)}</button>`).join("");
@@ -1154,6 +1159,38 @@ function dirStatus(date){
   return s;
 }
 
+/* 관리자: 직원 연차·병가 직접 등록 */
+const ABS_KIND = {
+  leave:  {ko:"연차", th:"ลางาน"},
+  am:     {ko:"오전 반차", th:"ลาครึ่งวันเช้า", half:"am"},
+  pm:     {ko:"오후 반차", th:"ลาครึ่งวันบ่าย", half:"pm"},
+  sick:   {ko:"병가", th:"ลาป่วย"},
+};
+function absAdminHTML(id){
+  const mine = Object.entries(FEV).filter(([k,e])=>e.kind==="absence" && e.id===id && e.to>=addDays(D.current,-7)).sort((a,b)=>a[1].from.localeCompare(b[1].from));
+  const d = dates[idx] || D.current;
+  return `<div class="absadm"><h3>🌴 연차·병가 등록 <small>관리자</small></h3>
+    <div class="absk">${Object.entries(ABS_KIND).map(([k,v],i)=>`<label><input type="radio" name="absK" value="${k}" ${i?"":"checked"}> ${v.ko}</label>`).join("")}</div>
+    <div class="absd"><input type="date" id="absF" value="${d}"> ~ <input type="date" id="absE" value="${d}"></div>
+    <button type="button" class="editbtn" style="background:#2f8f4e" onclick="addAbs('${id}')">등록</button><div class="msg" id="absM"></div>
+    ${mine.length ? `<ul class="absl">${mine.map(([k,e])=>`<li>${md(e.from)}${e.to>e.from?`~${md(e.to)}`:""} ${esc(e.ko)} <button type="button" onclick="delAbs('${k}','${id}',this)">✕</button></li>`).join("")}</ul>` : ""}
+  </div>`;
+}
+async function addAbs(id){
+  const k=document.querySelector('input[name="absK"]:checked').value, f=document.getElementById("absF").value, e=document.getElementById("absE").value||f, m=document.getElementById("absM");
+  if(!f){ m.textContent="날짜를 골라 주세요."; return; }
+  if(e<f){ m.textContent="끝나는 날이 시작일보다 빨라요."; return; }
+  const v=ABS_KIND[k]; let ko=v.ko, th=v.th;
+  if(k==="leave" && e>f){ ko="휴가"; th="ลาพักร้อน"; }       // 이틀 이상 연차 = 휴가
+  if(v.half && e>f){ m.textContent="반차는 하루만 골라 주세요."; return; }
+  const data={kind:"absence", id, from:f, to:e, type:"leave", ko, th, back:nextWorkday(e), src:"admin", at:ffs.serverTimestamp()};
+  if(v.half) data.half=v.half;
+  try{ await ffs.addDoc(ffs.collection(fdb,"office_events"), data); m.textContent="등록했어요."; setTimeout(()=>openDrawer(id),300); }catch(x){ m.textContent="저장하지 못했어요."; }
+}
+async function delAbs(k, id, btn){
+  if(btn.dataset.ok!=="1"){ btn.dataset.ok="1"; btn.textContent="삭제?"; return; }
+  try{ await ffs.deleteDoc(ffs.doc(fdb,"office_events",k)); openDrawer(id); }catch(x){ btn.textContent="✕"; }
+}
 async function addDirLeave(){
   const f=document.getElementById("dlF").value, e=document.getElementById("dlE").value, m=document.getElementById("dlM");
   if(!f){ m.textContent="시작일을 골라 주세요."; return; }
@@ -1229,6 +1266,7 @@ function openDrawer(id){
     ${canEdit(date) && checkoutMin(id,date)==null ? `<button class="editbtn" type="button" style="background:#f47a1a" onclick="openEdit('${id}','out')">🏠 ${T("퇴근하기","กลับบ้าน")}</button>` : ""}
     ${adminUser && STAFF_DOCS[date+"_"+id]?.early ? `<div class="warn" style="background:#fff4e5;color:#8a4b00">⏰ 조기 퇴근 ${esc(STAFF_DOCS[date+"_"+id].checkout||"")} · 사유: <b>${esc(STAFF_DOCS[date+"_"+id].early)}</b></div>` : ""}
     ${adminUser && fdb && checkoutMin(id,date)!=null ? `<button class="editbtn" type="button" style="background:#fff;color:#a33;border:1px solid #e3b4b4" onclick="undoCheckout('${id}','${date}',this)">↩️ 퇴근 취소 (관리자) · ${esc(STAFF_DOCS[date+"_"+id].checkout)}</button>` : ""}
+    ${adminUser && fdb ? absAdminHTML(id) : ""}
     ${r?.routine?.length && LANG!=="th"?`<h3>일상 업무</h3><div class="routine">${r.routine.map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
     ${prevNote}
     <h3>${T("이번 주 목표","เป้าหมายสัปดาห์นี้")} <small>${label(wk)}${T(" 주","")}</small></h3>${taskList(weekGoals(id,date))}
@@ -1518,7 +1556,7 @@ function openEdit(id, kind){
     if (isOut){ const m = nowMin() + (night ? 24*60 : 0); data.checkout = `${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`; }
     if (isOut && !night){
       const com = hm2m(data.checkout), endM = hm2m(D.hours.end);
-      const ot = otOf(id, date), pmHalf = (D.absences||[]).some(x=>x.id===id && x.half==="pm" && date>=x.from && date<=x.to);
+      const ot = otOf(id, date), pmHalf = ABS().some(x=>x.id===id && x.half==="pm" && date>=x.from && date<=x.to);
       const otOk = ot && ot.pick!=="late" && com >= hm2m(ot.out) - 30;
       const halfOk = pmHalf && com >= 12*60+30;   // 오후 반차는 12:30부터만 반차 퇴근으로 인정
       if (com < endM && !otOk && !halfOk){
@@ -1564,7 +1602,7 @@ function evDate(s){ const d=parse(s); return `${d.getUTCMonth()+1}/${d.getUTCDat
 function dayDiff(a,b){ return Math.round((parse(a)-parse(b))/864e5); }
 function boardItems(){
   const today=D.current;
-  const all=[...(D.events||[]).map(e=>({...e,src:"file"})), ...(D.notices||[]).map(e=>({...e,kind:"notice",src:"file"})), ...Object.entries(FEV).filter(([k,e])=>e.kind!=="status" && e.kind!=="dirleave").map(([k,e])=>({...e,_id:k,src:"fb"}))];
+  const all=[...(D.events||[]).map(e=>({...e,src:"file"})), ...(D.notices||[]).map(e=>({...e,kind:"notice",src:"file"})), ...Object.entries(FEV).filter(([k,e])=>e.kind!=="status" && e.kind!=="dirleave" && e.kind!=="absence").map(([k,e])=>({...e,_id:k,src:"fb"}))];
   const notices=all.filter(e=>e.kind==="notice" && (!e.until || e.until>=today) && (!e.date || e.date<=today || true)).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
   const events=all.filter(e=>e.kind!=="notice" && e.date && (e.end||e.date)>=today).sort((a,b)=>a.date.localeCompare(b.date));
   return {notices, events};
