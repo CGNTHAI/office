@@ -1846,7 +1846,8 @@ if (PUBLIC){
   Promise.all([import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"),import("https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js"),import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js")]).then(([appM,authM,fsM])=>{
     const app=appM.initializeApp(FB_CONFIG); fa=authM; fauth=fa.getAuth(app);
     ffs=fsM; fdb=ffs.getFirestore(app);
-    const startSync=()=>{ if(!D){ setTimeout(startSync,300); return; } ffs.onSnapshot(ffs.collection(fdb,"office_reports"), snap=>{ STAFF_DOCS={}; snap.forEach(d=>STAFF_DOCS[d.id]=d.data()); applyStaffDocs(); }, err=>console.warn("office_reports", err.code)); };
+    const startSync=()=>{ if(!D){ setTimeout(startSync,300); return; } const since = (()=>{ const d=new Date(); d.setDate(d.getDate()-35); return d.toISOString().slice(0,10); })();   // 최근 5주만 실시간으로 (읽기 횟수 절약)
+      ffs.onSnapshot(ffs.query(ffs.collection(fdb,"office_reports"), ffs.where("date",">=",since)), snap=>{ STAFF_DOCS={}; snap.forEach(d=>STAFF_DOCS[d.id]=d.data()); applyStaffDocs(); }, err=>console.warn("office_reports", err.code)); };
     startSync();
     ffs.onSnapshot(ffs.collection(fdb,"office_projects"), q=>{ PROJ_C = q.docs.map(d=>({_id:d.id, ...d.data()})).filter(x=>x.name).sort((a,b)=>a.name.localeCompare(b.name)); }, err=>console.warn("office_projects", err.code));
     ffs.onSnapshot(ffs.doc(fdb,"office_server","state"), d=>{ SERVER = d.exists() ? d.data() : null; if (D) render(); }, err=>console.warn("office_server", err.code));

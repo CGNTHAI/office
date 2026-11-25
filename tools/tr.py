@@ -11,11 +11,14 @@ def get(url):
     with urllib.request.urlopen(url, timeout=30) as r: return json.load(r)
 
 def docs():
-    out, tok = [], None
-    while True:
-        d = get(BASE + "?pageSize=300" + (f"&pageToken={tok}" if tok else ""))
-        out += d.get("documents", []); tok = d.get("nextPageToken")
-        if not tok: return out
+    """최근 14일치 문서만 읽어요 (Firestore 하루 무료 읽기 50,000회 절약)."""
+    import datetime as dt
+    since = (dt.date.today() - dt.timedelta(days=14)).isoformat()
+    q = {"structuredQuery": {"from": [{"collectionId": "office_reports"}],
+         "where": {"fieldFilter": {"field": {"fieldPath": "date"}, "op": "GREATER_THAN_OR_EQUAL", "value": {"stringValue": since}}}}}
+    req = urllib.request.Request(BASE.rsplit("/", 1)[0] + ":runQuery", data=json.dumps(q).encode(), headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=30) as r: res = json.load(r)
+    return [x["document"] for x in res if "document" in x]
 
 def tasks_of(doc):
     return doc.get("fields", {}).get("tasks", {}).get("arrayValue", {}).get("values", []) or []
