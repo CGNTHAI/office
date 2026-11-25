@@ -11,14 +11,19 @@ def get(url):
     with urllib.request.urlopen(url, timeout=30) as r: return json.load(r)
 
 def docs():
-    """최근 14일치 문서만 읽어요 (Firestore 하루 무료 읽기 50,000회 절약)."""
+    """오늘(방콕) 업무와 이번 주 목표 문서만 읽어요 (Firestore 하루 무료 읽기 50,000회 절약)."""
     import datetime as dt
-    since = (dt.date.today() - dt.timedelta(days=14)).isoformat()
+    today = (dt.datetime.utcnow() + dt.timedelta(hours=7)).date()
+    mon = today - dt.timedelta(days=today.weekday())
+    vals = [{"stringValue": today.isoformat()}] + ([{"stringValue": mon.isoformat()}] if mon != today else [])
     q = {"structuredQuery": {"from": [{"collectionId": "office_reports"}],
-         "where": {"fieldFilter": {"field": {"fieldPath": "date"}, "op": "GREATER_THAN_OR_EQUAL", "value": {"stringValue": since}}}}}
+         "where": {"fieldFilter": {"field": {"fieldPath": "date"}, "op": "IN", "value": {"arrayValue": {"values": vals}}}}}}
     req = urllib.request.Request(BASE.rsplit("/", 1)[0] + ":runQuery", data=json.dumps(q).encode(), headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=30) as r: res = json.load(r)
-    return [x["document"] for x in res if "document" in x]
+    out = [x["document"] for x in res if "document" in x]
+    # 월요일 날짜의 일일 업무 문서(YYYY-MM-DD_id)는 오늘이 월요일이 아니면 빼요 — 주간 목표(week_…)만 남김
+    if mon != today: out = [d for d in out if not (d["name"].rsplit("/",1)[1].startswith(mon.isoformat()))]
+    return out
 
 def tasks_of(doc):
     return doc.get("fields", {}).get("tasks", {}).get("arrayValue", {}).get("values", []) or []
