@@ -55,6 +55,7 @@ button{font:inherit;color:inherit}
 .tagbox .tg span{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;color:#333}
 .tagbox .more{font-size:10px;color:#7a5b00}
 @media (max-width:700px){.tagbox{position:static;width:auto;max-width:150px;margin-top:4px}.tagbox .tg{transform:none}}
+.tagbox .tn{display:block;margin-top:2px;font-style:italic;opacity:.85}
 .mbar{display:flex;flex-wrap:wrap;gap:5px;grid-column:1/-1;margin:2px 0 4px}.mbar button{border:1px solid #e8d77a;background:#fff8c9;border-radius:14px;padding:3px 9px;font-size:13px;cursor:pointer}.mbar small{color:#8a6d00}
 .pjl{list-style:none;padding:0;margin:8px 0;max-height:50vh;overflow:auto}.pjl li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 4px;border-top:1px solid #eee;font-size:14px}.pjl button{border:1px solid #e3b4b4;background:#fff;color:#a33;border-radius:8px;padding:3px 10px;cursor:pointer}
 .ef .rpc{border:1px solid #ddd;border-radius:8px;padding:6px;font-size:14px;width:9.5em;font-family:inherit}
@@ -1168,8 +1169,8 @@ function tagItems(date){
   const items = [];
   Object.entries(D.days[date]||{}).forEach(([from, r])=>{
     (r.tasks||[]).forEach(t=>{
-      const to = new Set([...mentionsIn(t.th), ...mentionsIn(t.ko), ...mentionsIn(t.nth), ...mentionsIn(t.n)]);
-      to.forEach(x=>{ if (x!==from) items.push({from, to:x, t}); });
+      const inT = new Set([...mentionsIn(t.th), ...mentionsIn(t.ko)]), inN = new Set([...mentionsIn(t.nth), ...mentionsIn(t.n)]);
+      new Set([...inT, ...inN]).forEach(x=>{ if (x!==from) items.push({from, to:x, t, note: inN.has(x)}); });
     });
   });
   return items;
@@ -1178,7 +1179,7 @@ const pName = id => id==="dr" ? (D.director.name||"") : (D.staff.find(s=>s.id===
 function tagBoxHTML(id, items){
   const mine = items.filter(x=>x.from===id || x.to===id); if(!mine.length) return "";
   const show = mine.slice(0,2);
-  return `<div class="tagbox">${show.map(x=>`<div class="tg"><b>🏷️ ${esc(pName(x.from))} → ${esc(pName(x.to))}</b><span>${esc(tText(x.t).replace(/@[\p{L}\p{M}\p{N}_]+\s*/gu,""))}</span></div>`).join("")}${mine.length>2?`<div class="more">+${mine.length-2}</div>`:""}</div>`;
+  return `<div class="tagbox">${show.map(x=>`<div class="tg"><b>🏷️ ${esc(pName(x.from))} → ${esc(pName(x.to))}</b><span>${esc(tText(x.t).replace(/@[\p{L}\p{M}\p{N}_]+\s*/gu,""))}</span>${x.note&&noteText(x.t)?`<span class="tn">💬 ${esc(noteText(x.t).replace(/@[\p{L}\p{M}\p{N}_]+\s*/gu,""))}</span>`:""}</div>`).join("")}${mine.length>2?`<div class="more">+${mine.length-2}</div>`:""}</div>`;
 }
 function paintBubble(c){
   const t = c.list[c.i], p = proj(t.p);
