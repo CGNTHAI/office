@@ -1845,7 +1845,7 @@ if (PUBLIC){
   document.getElementById("admBtn").onclick=openAdm;
   Promise.all([import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"),import("https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js"),import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js")]).then(([appM,authM,fsM])=>{
     const app=appM.initializeApp(FB_CONFIG); fa=authM; fauth=fa.getAuth(app);
-    ffs=fsM; fdb=ffs.getFirestore(app);
+    ffs=fsM; try{ fdb=ffs.initializeFirestore(app,{localCache:ffs.persistentLocalCache({tabManager:ffs.persistentMultipleTabManager()})}); }catch(e){ fdb=ffs.getFirestore(app); }   // 브라우저에 저장해 두고 바뀐 것 위주로 읽기
     const startSync=()=>{ if(!D){ setTimeout(startSync,300); return; } const since = (()=>{ const d=new Date(); d.setDate(d.getDate()-35); return d.toISOString().slice(0,10); })();   // 최근 5주만 실시간으로 (읽기 횟수 절약)
       ffs.onSnapshot(ffs.query(ffs.collection(fdb,"office_reports"), ffs.where("date",">=",since)), snap=>{ STAFF_DOCS={}; snap.forEach(d=>STAFF_DOCS[d.id]=d.data()); applyStaffDocs(); }, err=>console.warn("office_reports", err.code)); };
     startSync();
