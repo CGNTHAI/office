@@ -1791,7 +1791,7 @@ function openEvForm(id, mode){
   }; show();
 })();
 /* 관리자 모드 (GitHub 페이지 전용): 장비렌탈과 같은 관리자 계정으로 로그인 */
-const FB_CONFIG={apiKey:"AIzaSyDQc14PHuYCxUjoI0-8PLYGuTrQOMVvNeQ",authDomain:"cgn-rental.firebaseapp.com",projectId:"cgn-rental",storageBucket:"cgn-rental.firebasestorage.app",messagingSenderId:"665689013167",appId:"1:665689013167:web:81cda57f43bdee74b4cd5a"};
+const FB_CONFIG={apiKey:"AIzaSyAu6MRkD7JxLSXGLDZ7mv3o1-pIUULzi18",authDomain:"cgn-office.firebaseapp.com",projectId:"cgn-office",storageBucket:"cgn-office.firebasestorage.app",messagingSenderId:"859616281186",appId:"1:859616281186:web:cc413a5de86b05ce3c073b"};
 let fa=null, fauth=null, adminUser=null;
 function paintAdm(){ const b=document.getElementById("admBtn"); if(!b) return; b.hidden=!PUBLIC; b.classList.toggle("on",!!adminUser); b.textContent = adminUser ? T("🔓 관리자","🔓 ผู้ดูแล") : "🔒"; b.title = adminUser ? "관리자 모드" : "관리자 로그인"; }
 function admModal(html, bind){ const w=document.createElement("div"); w.className="admwrap"; w.innerHTML=`<div class="admbox">${html}</div>`; w.addEventListener("click",e=>{ if(e.target===w) w.remove(); }); document.body.appendChild(w); bind(w); }

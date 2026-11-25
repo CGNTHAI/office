@@ -4,7 +4,7 @@
   python3 tr.py apply FILE.json -> FILE = [{doc, i, f, ko}] ; writes the Korean into field f (default "ko")
 """
 import json, re, sys, urllib.request
-BASE = "https://firestore.googleapis.com/v1/projects/cgn-rental/databases/(default)/documents/office_reports"
+BASE = "https://firestore.googleapis.com/v1/projects/cgn-office/databases/(default)/documents/office_reports"
 THAI = re.compile(r"[฀-๿]")
 
 def get(url):
