@@ -56,16 +56,25 @@ button{font:inherit;color:inherit}
 .tagbox .more{font-size:10px;color:#7a5b00}
 .tagbox.tl{left:auto;right:calc(50% + 58px)}.tagbox.tl .tg{transform:rotate(-1.5deg)}
 .tagbox .tg.eve{background:#efe6ff;border-color:#b79ce6}.tagbox .tg.eve b{color:#5b3a9a}
+.tagbox .tg.dir{background:#fff0eb;border:1.5px solid #e5484d;box-shadow:0 2px 5px #e5484d26}.tagbox .tg.dir b{color:#c62828}
 .tagbox .tg.old{background:#eeeeee;border-color:#cfcfcf;filter:grayscale(1);opacity:.75}.tagbox .tg.old b{color:#666}
 .ibx{position:absolute;top:44px;left:calc(50% + 26px);min-width:22px;height:22px;border-radius:11px;background:#e5484d;color:#fff;font:800 14px/22px system-ui;text-align:center;box-shadow:0 0 0 2px #fff,0 2px 4px #0003;z-index:4;cursor:pointer;animation:ibp 1.6s infinite}
 .ibx i{position:absolute;top:-7px;right:-9px;background:#fff;color:#e5484d;border:1px solid #e5484d;border-radius:8px;font:700 10px/13px system-ui;padding:0 4px;font-style:normal}
 @keyframes ibp{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
 .iblist{display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow:auto;margin:8px 0}
-.ibrow{display:flex;gap:10px;align-items:flex-start;text-align:left;background:#fff8c9;border:1px solid #e8d77a;border-radius:10px;padding:9px;font-size:14px;cursor:pointer}
-.ibrow input{width:20px!important;height:20px;flex:none;margin:2px 0 0;padding:0}
-.ibrow.done{background:#f1f1f1;border-color:#ddd;opacity:.6}
-.ibrow.ro{cursor:default}.ibrow.ro input{cursor:default}
-.ibm em{font-style:normal;font-size:11px;border-radius:8px;padding:1px 6px}.ibm em.morn{background:#ffe98a}.ibm em.eve{background:#e2d4ff}.ibm small{color:#888}.ibn{color:#5b3a9a}
+.ibrow{display:flex;gap:10px;align-items:flex-start;text-align:left;background:#fff8c9;border:1px solid #e8d77a;border-radius:10px;padding:9px;font-size:14px}
+.ibrow label{cursor:pointer;display:block}
+.ibrow input{width:20px!important;height:20px;flex:none;margin:2px 0 0;padding:0;cursor:pointer}
+.ibrow.dir{background:#fff0eb;border:1.5px solid #e5484d}
+.ibrow.done{background:#f1f1f1;border-color:#ddd;opacity:.6}.ibrow.dir.done{border-width:1px}
+.ibrow.ro,.ibrow.ro label,.ibrow.ro input{cursor:default}
+.ibm{flex:1;min-width:0}
+.ibm em{font-style:normal;font-size:11px;border-radius:8px;padding:1px 6px}.ibm em.morn{background:#ffe98a}.ibm em.eve{background:#e2d4ff}.ibm em.dir{background:#e5484d;color:#fff;font-weight:700}.ibm small{color:#888}.ibn{color:#5b3a9a}
+.admbox .ibadd{display:inline-block;margin-top:6px;border:1px solid #e5484d;background:#fff;color:#c62828;border-radius:8px;padding:4px 10px;font-size:12.5px;font-weight:700;cursor:pointer}
+.admbox .ibadd:hover{background:#fff0eb}.admbox .ibadd:disabled{border-color:#9bd3b0;background:#f3fbf6;color:#2f8f4e;cursor:default}
+.tasks li.dir{background:#fff3ef;border:1px solid #f2b4b0}
+.ochips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px}.ochips button{border:1px solid #ddd;background:#fff;border-radius:999px;padding:3px 9px;font-size:12.5px;cursor:pointer;color:var(--ink)}.ochips button.on{background:#e5484d;border-color:#e5484d;color:#fff;font-weight:700}
+.ordl{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:6px}.ordl li{background:#fff3ef;border:1px solid #f2b4b0;border-radius:10px;padding:8px 10px;font-size:13px;position:relative}.ordl .oh{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding-right:22px;margin-bottom:3px}.ordl .ost{font-size:11px;border-radius:999px;padding:1px 7px;background:#ffe0d6;color:#b43222;font-weight:700}.ordl .ost.ok{background:#dff3e6;color:#237340}.ordl .del{position:absolute;top:6px;right:6px;border:0;background:none;color:#a33;cursor:pointer;font-size:14px}
 @media (max-width:700px){.tagbox,.tagbox.tl{position:static;width:auto;max-width:150px;margin-top:4px}.tagbox .tg,.tagbox.tl .tg{transform:none}}
 .tagbox .tn{display:block;margin-top:2px;font-style:italic;opacity:.85}
 .mbar{display:flex;flex-wrap:wrap;gap:5px;grid-column:1/-1;margin:2px 0 4px}.mbar button{border:1px solid #e8d77a;background:#fff8c9;border-radius:14px;padding:3px 9px;font-size:13px;cursor:pointer}.mbar small{color:#8a6d00}
@@ -1179,7 +1188,9 @@ function mentionsIn(text){
   return out;
 }
 const hashS = x => { let h=5381; for (const c of String(x||"")) h=((h<<5)+h+c.codePointAt(0))|0; return (h>>>0).toString(36); };
-/* 태그 항목: src "t"=할 일 내용, "n"=진행 코멘트. eve=저녁(16:30 이후) 업데이트에서 쓴 태그 */
+const cleanTag = s => String(s||"").replace(/@[\p{L}\p{M}\p{N}_]+\s*/gu,"").trim();
+const nowHM = () => { const n=nowBKK(); return String(n.getUTCHours()).padStart(2,"0")+":"+String(n.getUTCMinutes()).padStart(2,"0"); };
+/* 태그 항목: src "t"=할 일 내용, "n"=진행 코멘트, "o"=지사장 업무 지시. eve=저녁(16:30 이후) 업데이트에서 쓴 태그 */
 function tagItems(date){
   const items = [];
   Object.entries(D.days[date]||{}).forEach(([from, r])=>{
@@ -1192,6 +1203,14 @@ function tagItems(date){
       });
     });
   });
+  Object.entries(FEV||{}).forEach(([eid, e])=>{
+    if (!e || e.kind!=="order" || e.date!==date) return;
+    const tos = Array.isArray(e.to) && e.to.length ? e.to : [...new Set([...mentionsIn(e.ko), ...mentionsIn(e.th)])];
+    const tm = e.tm || "", eve = tm ? (tm >= "16:30" || tm < "05:00") : false;
+    const ko = e.ko || e.th || "", th = e.th || e.ko || "";
+    const t = { ko, th, p: guessProj(th || ko), s: "plan" };
+    tos.forEach(x=>{ if (x && x!=="dr") items.push({date, from:"dr", to:x, t, src:"o", order:true, eid, tm, eve, key:`${date}|dr|o|${eid}|${x}`}); });
+  });
   return items;
 }
 const pName = id => id==="dr" ? (D.director.name||"Yohan") : (D.staff.find(s=>s.id===id)||{}).name || id;
@@ -1199,23 +1218,26 @@ const pName = id => id==="dr" ? (D.director.name||"Yohan") : (D.staff.find(s=>s.
 let INBOX = {};   // {id: {key:true}}
 function inboxItems(id){
   const from = addDays(D.current, -7), out = [];
-  Object.keys(D.days).filter(d=>d>=from && d<=D.current).forEach(d=>tagItems(d).forEach(x=>{ if (x.to===id) out.push(x); }));
+  const ds = new Set([...Object.keys(D.days), ...Object.values(FEV||{}).filter(e=>e&&e.kind==="order"&&e.date).map(e=>e.date)]);
+  [...ds].filter(d=>d>=from && d<=D.current).forEach(d=>tagItems(d).forEach(x=>{ if (x.to===id) out.push(x); }));
   return out.sort((a,b)=> (b.date+(b.eve?"2":"1")+b.tm).localeCompare(a.date+(a.eve?"2":"1")+a.tm));
 }
 const isAck = x => !!(INBOX[x.to]||{})[x.key];
 function inboxCount(id){ return inboxItems(id).filter(x=>!isAck(x)).length; }
-const tagTxt = x => (x.src==="n" ? noteText(x.t) : tText(x.t)).replace(/@[\p{L}\p{M}\p{N}_]+\s*/gu,"").trim();
+const tagTxt = x => cleanTag(x.src==="n" ? noteText(x.t) : tText(x.t));
 function tgCard(x, cls){
-  const sub = x.src==="n" ? `<span>${esc(tText(x.t).replace(/@[\p{L}\p{M}\p{N}_]+\s*/gu,""))}</span><span class="tn">💬 ${esc(tagTxt(x))}</span>` : `<span>${esc(tagTxt(x))}</span>`;
-  return `<div class="tg ${cls}"><b>${cls.includes("yday")?T("어제 · ","เมื่อวาน · "):""}🏷️ ${esc(pName(x.from))} → ${esc(pName(x.to))}</b>${sub}</div>`;
+  const sub = x.src==="n" ? `<span>${esc(cleanTag(tText(x.t)))}</span><span class="tn">💬 ${esc(tagTxt(x))}</span>` : `<span>${esc(tagTxt(x))}</span>`;
+  return `<div class="tg ${cls}"><b>${cls.includes("yday")?T("어제 · ","เมื่อวาน · "):""}${x.order?"📢":"🏷️"} ${esc(pName(x.from))} → ${esc(pName(x.to))}</b>${sub}</div>`;
 }
 function tagBoxHTML(id, items){
   const date = D.current, mine = items.filter(x=>x.from===id || x.to===id);
   const updated = f => !!STAFF_DOCS[date+"_"+f]?.checkout || items.some(y=>y.from===f && y.eve);
-  const morn = mine.filter(x=>!x.eve), eve = mine.filter(x=>x.eve);
-  const yday = tagItems(prevWorkday(date)).filter(x=>x.to===id && !isAck(x));
-  const left = [...morn.map(x=>tgCard(x, updated(x.from)?"old":"")), ...yday.map(x=>tgCard(x,"old yday"))];
-  const right = eve.map(x=>tgCard(x,"eve"));
+  const clsOf = (x, base) => x.order ? (isAck(x) ? "dir old" : "dir") : base;
+  const pri = (a,b) => (b.order?1:0)-(a.order?1:0) || (isAck(a)?1:0)-(isAck(b)?1:0);
+  const morn = mine.filter(x=>!x.eve).sort(pri), eve = mine.filter(x=>x.eve).sort(pri);
+  const yday = tagItems(prevWorkday(date)).filter(x=>x.to===id && !isAck(x)).sort(pri);
+  const left = [...morn.map(x=>tgCard(x, clsOf(x, updated(x.from)?"old":""))), ...yday.map(x=>tgCard(x, x.order?"dir yday":"old yday"))];
+  const right = eve.map(x=>tgCard(x, clsOf(x, "eve")));
   const col = (arr, c) => arr.length ? `<div class="tagbox ${c}">${arr.slice(0,2).join("")}${arr.length>2?`<div class="more">+${arr.length-2}</div>`:""}</div>` : "";
   return col(left,"tl") + col(right,"tr");
 }
@@ -1235,14 +1257,54 @@ function syncInboxBtn(id){
   btn.textContent = `📥 ${T("수신함","กล่องข้อความ")}${n?` · ${T("새 태그","แท็กใหม่")} ${n}`:""}`;
 }
 function tagListHTML(id, date){
-  const tg = tagItems(date).filter(x=>x.from===id||x.to===id);
-  return tg.length ? `<h3>🏷️ ${T("태그","แท็ก")}</h3><ul class="tasks">${tg.map(x=>`<li><span class="pill" style="background:${x.eve?"#8a63d2":"#c9a227"}">${esc(pName(x.from))} → ${esc(pName(x.to))}</span><span class="ko">${esc(tText(x.t))}</span>${x.src==="n"&&noteText(x.t)?`<span class="note">↳ 💬 ${esc(noteText(x.t))}</span>`:""}</li>`).join("")}</ul>` : "";
+  const tg = tagItems(date).filter(x=>x.from===id||x.to===id).sort((a,b)=>(b.order?1:0)-(a.order?1:0));
+  return tg.length ? `<h3>🏷️ ${T("태그","แท็ก")}</h3><ul class="tasks">${tg.map(x=>`<li class="${x.order?"dir":""}"><span class="pill" style="background:${x.order?"#e5484d":x.eve?"#8a63d2":"#c9a227"}">${x.order?"📢 ":""}${esc(pName(x.from))} → ${esc(pName(x.to))}</span><span class="ko">${esc(x.order?cleanTag(tText(x.t)):tText(x.t))}</span>${x.src==="n"&&noteText(x.t)?`<span class="note">↳ 💬 ${esc(noteText(x.t))}</span>`:""}</li>`).join("")}</ul>` : "";
+}
+async function addOrderToToday(id, x, btn){
+  if (!fdb) return;
+  const date = D.current, docId = date + "_" + id;
+  const ko = cleanTag(x.t.ko) || cleanTag(x.t.th), th = cleanTag(x.t.th) || cleanTag(x.t.ko);
+  if (!ko && !th) return;
+  const curTasks = clone(report(id, date)?.tasks || []);
+  if (curTasks.some(t=>t.ko===ko || t.th===th)){
+    btn.disabled = true; btn.textContent = `✅ ${T("오늘 할 일에 추가됨","เพิ่มในงานวันนี้แล้ว")}`; return;
+  }
+  if (curTasks.length >= 20){ alertLite(T("오늘 할 일은 최대 20개까지예요.","งานวันนี้เพิ่มได้สูงสุด 20 รายการครับ")); return; }
+  btn.disabled = true; btn.textContent = T("추가 중…","กำลังเพิ่ม…");
+  curTasks.push({ p: guessProj(th || ko), ko, th, s: "plan" });
+  const prev = STAFF_DOCS[docId] || {};
+  const data = { date, id, tasks: curTasks, at: ffs.serverTimestamp() };
+  const ci = prev.checkin || ((D.checkin||{})[date]||{})[id];
+  if (ci) data.checkin = ci;
+  ["checkout","ot","early"].forEach(k=>{ if(prev[k]) data[k]=prev[k]; });
+  try{
+    await ffs.setDoc(ffs.doc(fdb,"office_reports",docId), data);
+    STAFF_DOCS[docId] = { ...data, at: { seconds: Math.floor(Date.now()/1000) } };
+    applyStaffDocs();
+    btn.textContent = `✅ ${T("오늘 할 일에 추가됨","เพิ่มในงานวันนี้แล้ว")}`;
+  }catch(e){
+    console.warn("addOrderToToday", e.code);
+    btn.disabled = false; btn.textContent = `＋ ${T("오늘 할 일에 추가","เพิ่มในงานวันนี้")}`;
+    alertLite(T("추가하지 못했어요.","เพิ่มไม่สำเร็จครับ"));
+  }
 }
 function openInbox(id){
   const list = inboxItems(id), canAck = id!=="dr" || !!adminUser;
-  const row = x => `<label class="ibrow ${isAck(x)?"done":""}${canAck?"":" ro"}"><input type="checkbox" data-k="${esc(x.key)}" ${isAck(x)?"checked":""} ${canAck?"":"disabled"}>
-    <span class="ibm"><b>${esc(pName(x.from))}</b> <em class="${x.eve?"eve":"morn"}">${x.eve?T("🌙 저녁 업데이트","🌙 อัปเดตตอนเย็น"):T("🌅 아침 계획","🌅 แผนตอนเช้า")}</em> <small>${label(x.date)}${x.tm?" "+x.tm:""}</small><br>
-    ${esc(tText(x.t).replace(/@[\p{L}\p{M}\p{N}_]+\s*/gu,""))}${x.src==="n"?`<br><span class="ibn">💬 ${esc(tagTxt(x))}</span>`:""}</span></label>`;
+  const todayTasks = report(id, D.current)?.tasks || [];
+  const hasTask = x => { const k=cleanTag(x.t.ko)||cleanTag(x.t.th), th=cleanTag(x.t.th)||cleanTag(x.t.ko); return todayTasks.some(t=>t.ko===k || t.th===th); };
+  const row = (x, i) => {
+    const badge = x.order
+      ? `<em class="dir">📢 ${T("지사장 지시","คำสั่งจากผู้อำนวยการ")}</em>`
+      : `<em class="${x.eve?"eve":"morn"}">${x.eve?T("🌙 저녁 업데이트","🌙 อัปเดตตอนเย็น"):T("🌅 아침 계획","🌅 แผนตอนเช้า")}</em>`;
+    const addBtn = x.order && id!=="dr" && fdb
+      ? (hasTask(x)
+          ? `<button type="button" class="ibadd" disabled>✅ ${T("오늘 할 일에 추가됨","เพิ่มในงานวันนี้แล้ว")}</button>`
+          : `<button type="button" class="ibadd" data-add="${i}">＋ ${T("오늘 할 일에 추가","เพิ่มในงานวันนี้")}</button>`)
+      : "";
+    return `<div class="ibrow ${x.order?"dir ":""}${isAck(x)?"done":""}${canAck?"":" ro"}"><input type="checkbox" id="ibc_${i}" data-k="${esc(x.key)}" ${isAck(x)?"checked":""} ${canAck?"":"disabled"}>
+      <div class="ibm"><label for="ibc_${i}"><b>${esc(pName(x.from))}</b> ${badge} <small>${label(x.date)}${x.tm?" "+x.tm:""}</small><br>
+      ${esc(cleanTag(tText(x.t)))}${x.src==="n"?`<br><span class="ibn">💬 ${esc(tagTxt(x))}</span>`:""}</label>${addBtn}</div></div>`;
+  };
   const hint = canAck
     ? T("최근 7일 동안 나를 태그한 내용이에요. 읽은 다음 ✅ 체크하면 빨간 표시가 사라져요.","ข้อความที่แท็กถึงคุณใน 7 วันที่ผ่านมา อ่านแล้วกด ✅ เครื่องหมายสีแดงจะหายไปครับ")
     : T("최근 7일 동안 지사장님을 태그한 내용이에요. 확인 체크는 관리자(🔒) 로그인 후 할 수 있어요.","ข้อความที่แท็กถึงผู้อำนวยการใน 7 วันที่ผ่านมา การเช็กยืนยันทำได้เฉพาะในโหมดผู้ดูแล (🔒) ครับ");
@@ -1251,12 +1313,13 @@ function openInbox(id){
     <div class="iblist">${list.length ? list.map(row).join("") : `<div class="empty">${T("📭 아직 태그된 내용이 없어요","📭 ยังไม่มีข้อความที่แท็กถึงคุณ")}</div>`}</div>
     <div class="row">${canAck?`<button type="button" id="ibAll">✅ ${T("모두 확인","อ่านทั้งหมดแล้ว")}</button>`:""}<button type="button" class="pri" id="ibX">${T("닫기","ปิด")}</button></div>`, w=>{
     w.querySelector("#ibX").onclick=()=>w.remove();
+    w.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{ const x=list[+b.dataset.add]; if(x) addOrderToToday(id, x, b); });
     if (!canAck) return;
     const save = async (keys, on) => {
       if (!keys.length) return;
       const cur = {...(INBOX[id]||{})}; keys.forEach(k=>{ if(on) cur[k]=true; else delete cur[k]; });
       const keep = addDays(D.current,-14); Object.keys(cur).forEach(k=>{ if(k.slice(0,10)<keep) delete cur[k]; });
-      INBOX[id]=cur; render(); syncInboxBtn(id);
+      INBOX[id]=cur; render(); syncInboxBtn(id); syncDirOrders();
       try{ await ffs.setDoc(ffs.doc(fdb,"office_inbox",id), {ack:cur, at:ffs.serverTimestamp()}); }catch(e){ console.warn("office_inbox", e.code); alertLite(T("저장하지 못했어요.","บันทึกไม่สำเร็จครับ")); }
     };
     w.querySelectorAll("input[data-k]").forEach(c=>c.onchange=()=>{ c.closest(".ibrow").classList.toggle("done", c.checked); save([c.dataset.k], c.checked); });
@@ -1354,6 +1417,100 @@ async function setDirStatus(status, extra){
   try{ await ffs.setDoc(ffs.doc(fdb,"office_events","director_status"), {kind:"status", status, date:D.current, time:t, at:ffs.serverTimestamp(), ...(extra||{})}); }
   catch(e){ alertLite("저장하지 못했어요."); }
 }
+function dirOrdersListHTML(){
+  const from = addDays(D.current, -7);
+  const list = Object.entries(FEV||{})
+    .filter(([k,e])=>e && e.kind==="order" && e.date>=from)
+    .sort((a,b)=>(b[1].date+(b[1].tm||"")).localeCompare(a[1].date+(a[1].tm||"")));
+  if (!list.length) return "";
+  return `<ul class="ordl">${list.map(([k,e])=>{
+    const tos = Array.isArray(e.to) ? e.to : [];
+    const stPills = tos.map(uid=>{
+      const ok = !!(INBOX[uid]||{})[`${e.date}|dr|o|${k}|${uid}`];
+      return `<span class="ost ${ok?"ok":""}">${esc(pName(uid))} ${ok?"✅":"⏳"}</span>`;
+    }).join("");
+    const ko = cleanTag(e.ko||e.th), th = e.th ? cleanTag(e.th) : "";
+    return `<li><div class="oh">${stPills}<small style="color:var(--ink-soft)">${md(e.date)}${e.tm?" "+esc(e.tm):""}</small></div>
+      <div>${esc(ko)}</div>${th && th!==ko ? `<div style="font-size:12px;color:var(--ink-soft);margin-top:2px">${esc(th)}</div>` : ""}
+      <button type="button" class="del" onclick="delDirOrder('${k}',this)" title="삭제">✕</button></li>`;
+  }).join("")}</ul>`;
+}
+function syncDirOrders(){ const el=document.getElementById("dirOrdList"); if (el) el.innerHTML = dirOrdersListHTML(); }
+function dirOrderAdminHTML(){
+  return `<h3>📢 직원에게 업무 지시</h3>
+    <div class="ef" id="doForm"><div class="row" style="grid-template-columns:1fr">
+      <div class="ochips" id="doChips">${D.staff.map(x=>`<button type="button" data-id="${x.id}" data-n="${esc(x.name)}">@${esc(x.name)} <small style="opacity:.7">${esc(x.kname||"")}</small></button>`).join("")}</div>
+      <textarea id="doK" rows="2" maxlength="200" placeholder="예) @Ox 리빙라이프 1차 편집 확인 부탁해요 (@ 입력 시 자동완성)"></textarea>
+      <textarea id="doT" rows="2" maxlength="200" placeholder="태국어 (선택) 예) รบกวนตรวจสอบตัดต่อ Living Life รอบแรกนะครับ"></textarea>
+      <button type="button" class="add" id="doSend" style="background:#e5484d;color:#fff;border:0;font-weight:700">📢 지시 보내기</button>
+      <p class="msg" id="doM"></p>
+    </div></div>
+    <div id="dirOrdList">${dirOrdersListHTML()}</div>`;
+}
+function bindDirOrderForm(){
+  const form = document.getElementById("doForm"); if (!form) return;
+  const koEl = document.getElementById("doK"), thEl = document.getElementById("doT"), chips = document.getElementById("doChips");
+  const syncChips = () => {
+    const ids = new Set([...mentionsIn(koEl.value), ...mentionsIn(thEl.value)]);
+    chips.querySelectorAll("button").forEach(b=>b.classList.toggle("on", ids.has(b.dataset.id)));
+  };
+  chips.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    const id = b.dataset.id, nm = b.dataset.n;
+    if (mentionsIn(koEl.value).has(id)){
+      const st = D.staff.find(x=>x.id===id);
+      const ks = [id, nm, st?.kname].filter(Boolean).map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"));
+      koEl.value = koEl.value.replace(new RegExp(`@(?:${ks.join("|")})\\s*`,"giu"),"").replace(/\s{2,}/g," ").trimStart();
+    } else {
+      koEl.value = `@${nm} ` + koEl.value.replace(/^\s+/,"");
+    }
+    syncChips(); koEl.focus();
+  });
+  const mbar = document.createElement("div"); mbar.className="mbar"; mbar.hidden=true;
+  form.addEventListener("input", e=>{
+    syncChips();
+    const ta = e.target; if(!(ta instanceof HTMLTextAreaElement)) return;
+    const pre = ta.value.slice(0, ta.selectionStart), m = pre.match(/@([\p{L}\p{M}\p{N}_]*)$/u);
+    if(!m){ mbar.hidden=true; return; }
+    const q = m[1].toLowerCase();
+    const ppl = D.staff.map(x=>[x.name, x.kname, x.id]).filter(([n,k,pid])=>!q || n.toLowerCase().startsWith(q) || (k||"").startsWith(m[1]) || pid.toLowerCase().startsWith(q));
+    if(!ppl.length){ mbar.hidden=true; return; }
+    mbar.innerHTML = ppl.map(([n,k])=>`<button type="button" data-n="${esc(n)}">@${esc(n)} <small>${esc(k||"")}</small></button>`).join("");
+    ta.insertAdjacentElement("afterend", mbar); mbar.hidden=false;
+    mbar.querySelectorAll("button").forEach(b=>b.onmousedown=ev=>{ ev.preventDefault();
+      const start = ta.selectionStart - m[0].length, ins = "@"+b.dataset.n+" ";
+      ta.value = ta.value.slice(0,start) + ins + ta.value.slice(ta.selectionStart);
+      ta.selectionStart = ta.selectionEnd = start + ins.length; mbar.hidden=true; syncChips(); ta.focus(); });
+  });
+  form.addEventListener("focusout", ()=>{ setTimeout(()=>{ if(!form.contains(document.activeElement) || !(document.activeElement instanceof HTMLTextAreaElement)) mbar.hidden=true; },150); });
+  document.getElementById("doSend").onclick = saveDirOrder;
+}
+async function saveDirOrder(){
+  if (!adminUser || !fdb) return;
+  const koEl = document.getElementById("doK"), thEl = document.getElementById("doT"), m = document.getElementById("doM"), btn = document.getElementById("doSend");
+  const ko = koEl.value.trim().slice(0,200), th = thEl.value.trim().slice(0,200);
+  const to = [...new Set([...mentionsIn(ko), ...mentionsIn(th)])].filter(x=>x!=="dr");
+  if (!to.length){ m.textContent = "받는 직원을 @태그로 지정해 주세요. (위 이름 버튼 클릭 또는 @이름 입력)"; koEl.focus(); return; }
+  if (!cleanTag(ko) && !cleanTag(th)){ m.textContent = "지시 내용을 입력해 주세요."; koEl.focus(); return; }
+  btn.disabled = true; btn.textContent = "보내는 중…"; m.textContent = "";
+  const data = { kind:"order", date:D.current, tm:nowHM(), to, ko:ko||th, th, at:ffs.serverTimestamp() };
+  try{
+    const ref = await ffs.addDoc(ffs.collection(fdb,"office_events"), data);
+    if (ref && ref.id) FEV[ref.id] = data;
+    render(); openDrawer("dr");
+  }catch(e){
+    console.warn("office_events order", e.code);
+    m.textContent = "저장하지 못했어요."; btn.disabled = false; btn.textContent = "📢 지시 보내기";
+  }
+}
+async function delDirOrder(k, btn){
+  if (!adminUser || !fdb) return;
+  if (btn) btn.textContent = "…";
+  try{
+    await ffs.deleteDoc(ffs.doc(fdb,"office_events",k));
+    delete FEV[k];
+    render(); openDrawer("dr");
+  }catch(e){ if (btn) btn.textContent = "✕"; }
+}
 function openDrawer(id){
   editId = id;
   const date = dates[idx];
@@ -1365,7 +1522,8 @@ function openDrawer(id){
       ${adminUser && fdb ? (()=>{ const cur=dirStatus(D.current).status; const b=(k,ic,ko)=>`<button type="button" class="editbtn" style="${cur===k?"":"background:#fff;color:var(--ink);border:1px solid #ccc"}" onclick="setDirStatus('${k}').then(()=>openDrawer('dr'))">${ic} ${ko}${cur===k?" ✓":""}</button>`;
         const lv = Object.entries(FEV).filter(([k,e])=>e.kind==="dirleave" && (e.to||e.from)>=D.current).sort((x,y)=>x[1].from.localeCompare(y[1].from));
         const cs = dirStatus(D.current);
-        return `<h3>지금 상태</h3>${b("in","🏢","출근 · 자리에 있음")}${b("meeting","🚗","외부 미팅 · 자리 비움")}${b("out","👋","퇴근")}
+        return `${dirOrderAdminHTML()}
+        <h3>지금 상태</h3>${b("in","🏢","출근 · 자리에 있음")}${b("meeting","🚗","외부 미팅 · 자리 비움")}${b("out","👋","퇴근")}
         <h3>⚡ 자주 쓰는 상태</h3>
         <div style="display:flex;flex-wrap:wrap;gap:6px">${(D.dirPresets||[]).map((p,i)=>{ const on = cur==="custom" && cs.msg===`${p.icon} ${p.ko}`; return `<button type="button" onclick="setDirPreset(${i})" style="border:1px solid ${on?"var(--ink)":"#ccc"};background:${on?"var(--ink)":"#fff"};color:${on?"#fff":"inherit"};border-radius:999px;padding:6px 11px;font-size:13px;cursor:pointer">${p.icon} ${esc(p.ko)} <small style="opacity:.7">${p.away?"· 자리 비움":""}</small></button>`; }).join("")}</div>
         <h3>✏️ 상태 메시지 직접 입력${cur==="custom" && !(D.dirPresets||[]).some(p=>`${p.icon} ${p.ko}`===cs.msg)?" ✓":""}</h3>
@@ -1383,6 +1541,7 @@ function openDrawer(id){
           <button type="button" class="add" onclick="addDirLeave()">+ 등록</button><p class="msg" id="dlM"></p></div></div>
         ${lv.length?`<ul class="tasks">${lv.map(([k,e])=>`<li><b>🌴 ${(e.to||e.from)>e.from?"휴가":"연차"}</b> ${md(e.from)}${e.to&&e.to!==e.from?"~"+md(e.to):""} <button type="button" class="del" onclick="delDirLeave('${k}',this)" title="삭제">✕</button></li>`).join("")}</ul>`:""}`; })() : `<p class="hint">${T("지사장님 상태는 관리자 모드에서 바꿀 수 있어요.","")}</p>`}
       ${imgOf(id)?"":`<h3>캐릭터 꾸미기</h3><div id="pickerWrap">${pickerHTML(id)}</div>`}`;
+    if (adminUser && fdb) bindDirOrderForm();
     showDrawer(); return;
   }
   const st = D.staff.find(s=>s.id===id); if(!st) return;
@@ -1781,7 +1940,7 @@ function evDate(s){ const d=parse(s); return `${d.getUTCMonth()+1}/${d.getUTCDat
 function dayDiff(a,b){ return Math.round((parse(a)-parse(b))/864e5); }
 function boardItems(){
   const today=D.current;
-  const all=[...(D.events||[]).map(e=>({...e,src:"file"})), ...(D.notices||[]).map(e=>({...e,kind:"notice",src:"file"})), ...Object.entries(FEV).filter(([k,e])=>e.kind!=="status" && e.kind!=="dirleave" && e.kind!=="absence").map(([k,e])=>({...e,_id:k,src:"fb"}))];
+  const all=[...(D.events||[]).map(e=>({...e,src:"file"})), ...(D.notices||[]).map(e=>({...e,kind:"notice",src:"file"})), ...Object.entries(FEV).filter(([k,e])=>e.kind!=="status" && e.kind!=="dirleave" && e.kind!=="absence" && e.kind!=="order").map(([k,e])=>({...e,_id:k,src:"fb"}))];
   const notices=all.filter(e=>e.kind==="notice" && (!e.until || e.until>=today) && (!e.date || e.date<=today || true)).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
   const events=all.filter(e=>e.kind!=="notice" && e.date && (e.end||e.date)>=today).sort((a,b)=>a.date.localeCompare(b.date));
   return {notices, events};
@@ -1942,9 +2101,9 @@ if (PUBLIC){
       ffs.onSnapshot(ffs.query(ffs.collection(fdb,"office_reports"), ffs.where("date",">=",since)), snap=>{ STAFF_DOCS={}; snap.forEach(d=>STAFF_DOCS[d.id]=d.data()); applyStaffDocs(); }, err=>console.warn("office_reports", err.code)); };
     startSync();
     ffs.onSnapshot(ffs.collection(fdb,"office_projects"), q=>{ PROJ_C = q.docs.map(d=>({_id:d.id, ...d.data()})).filter(x=>x.name).sort((a,b)=>a.name.localeCompare(b.name)); }, err=>console.warn("office_projects", err.code));
-    ffs.onSnapshot(ffs.collection(fdb,"office_inbox"), snap=>{ INBOX={}; snap.forEach(d=>INBOX[d.id]=(d.data().ack)||{}); if (D){ render(); syncInboxBtn(editId); } }, err=>console.warn("office_inbox", err.code));
+    ffs.onSnapshot(ffs.collection(fdb,"office_inbox"), snap=>{ INBOX={}; snap.forEach(d=>INBOX[d.id]=(d.data().ack)||{}); if (D){ render(); syncInboxBtn(editId); syncDirOrders(); } }, err=>console.warn("office_inbox", err.code));
     ffs.onSnapshot(ffs.doc(fdb,"office_server","state"), d=>{ SERVER = d.exists() ? d.data() : null; if (D) render(); }, err=>console.warn("office_server", err.code));
-    ffs.onSnapshot(ffs.collection(fdb,"office_events"), snap=>{ FEV={}; snap.forEach(d=>FEV[d.id]=d.data()); if (D) render(); else renderEvents(); }, err=>console.warn("office_events", err.code));
+    ffs.onSnapshot(ffs.collection(fdb,"office_events"), snap=>{ FEV={}; snap.forEach(d=>FEV[d.id]=d.data()); if (D){ render(); syncInboxBtn(editId); syncDirOrders(); } else renderEvents(); }, err=>console.warn("office_events", err.code));
     fa.onAuthStateChanged(fauth,u=>{ const was=!!adminUser; adminUser=u||null; STAFF=!adminUser;
       if(adminUser && !was) LANG="ko"; if(!adminUser && was) LANG="th";
       paintAdm(); if(D){ try{ closeDrawer(); }catch(e){} render(); tickClock(); if(window.drawLegend) drawLegend(); } });
