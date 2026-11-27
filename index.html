@@ -64,6 +64,7 @@ button{font:inherit;color:inherit}
 .ibrow{display:flex;gap:10px;align-items:flex-start;text-align:left;background:#fff8c9;border:1px solid #e8d77a;border-radius:10px;padding:9px;font-size:14px;cursor:pointer}
 .ibrow input{width:20px!important;height:20px;flex:none;margin:2px 0 0;padding:0}
 .ibrow.done{background:#f1f1f1;border-color:#ddd;opacity:.6}
+.ibrow.ro{cursor:default}.ibrow.ro input{cursor:default}
 .ibm em{font-style:normal;font-size:11px;border-radius:8px;padding:1px 6px}.ibm em.morn{background:#ffe98a}.ibm em.eve{background:#e2d4ff}.ibm small{color:#888}.ibn{color:#5b3a9a}
 @media (max-width:700px){.tagbox,.tagbox.tl{position:static;width:auto;max-width:150px;margin-top:4px}.tagbox .tg,.tagbox.tl .tg{transform:none}}
 .tagbox .tn{display:block;margin-top:2px;font-style:italic;opacity:.85}
@@ -1166,7 +1167,7 @@ function renderStreet(date){
   streetScale();
 }
 /* @태그: 업무·코멘트에 @이름 을 쓰면 태그한 사람과 태그된 사람 자리에 옆 상자로 표시 */
-function tagPeople(){ return [...D.staff.map(st=>({id:st.id, keys:[st.id, st.name, st.kname].filter(Boolean)})), {id:"dr", keys:["dr", D.director.name, D.director.kname].filter(Boolean)}]; }
+function tagPeople(){ return [...D.staff.map(st=>({id:st.id, keys:[st.id, st.name, st.kname].filter(Boolean)})), {id:"dr", keys:["dr", D.director.name||"Yohan", D.director.kname, D.director.label].filter(Boolean)}]; }
 function mentionsIn(text){
   const out = new Set(); if(!text) return out;
   const ppl = tagPeople();
@@ -1193,7 +1194,7 @@ function tagItems(date){
   });
   return items;
 }
-const pName = id => id==="dr" ? (D.director.name||"") : (D.staff.find(s=>s.id===id)||{}).name || id;
+const pName = id => id==="dr" ? (D.director.name||"Yohan") : (D.staff.find(s=>s.id===id)||{}).name || id;
 /* 수신함: 최근 7일 동안 나를 태그한 것. 확인(체크) 전까지 빨간 표시 */
 let INBOX = {};   // {id: {key:true}}
 function inboxItems(id){
@@ -1218,20 +1219,44 @@ function tagBoxHTML(id, items){
   const col = (arr, c) => arr.length ? `<div class="tagbox ${c}">${arr.slice(0,2).join("")}${arr.length>2?`<div class="more">+${arr.length-2}</div>`:""}</div>` : "";
   return col(left,"tl") + col(right,"tr");
 }
+function inboxBtnHTML(id){
+  if (!fdb) return "";
+  const n = inboxCount(id);
+  return `<button class="editbtn" type="button" data-ibx-btn="${id}" style="background:${n?"#e5484d":"#fff"};color:${n?"#fff":"var(--ink)"};border:1px solid ${n?"#e5484d":"#ccc"}" onclick="openInbox('${id}')">📥 ${T("수신함","กล่องข้อความ")}${n?` · ${T("새 태그","แท็กใหม่")} ${n}`:""}</button>`;
+}
+function syncInboxBtn(id){
+  if (!id) return;
+  const btn = document.querySelector(`#dbody [data-ibx-btn="${id}"]`);
+  if (!btn) return;
+  const n = inboxCount(id);
+  btn.style.background = n ? "#e5484d" : "#fff";
+  btn.style.color = n ? "#fff" : "var(--ink)";
+  btn.style.borderColor = n ? "#e5484d" : "#ccc";
+  btn.textContent = `📥 ${T("수신함","กล่องข้อความ")}${n?` · ${T("새 태그","แท็กใหม่")} ${n}`:""}`;
+}
+function tagListHTML(id, date){
+  const tg = tagItems(date).filter(x=>x.from===id||x.to===id);
+  return tg.length ? `<h3>🏷️ ${T("태그","แท็ก")}</h3><ul class="tasks">${tg.map(x=>`<li><span class="pill" style="background:${x.eve?"#8a63d2":"#c9a227"}">${esc(pName(x.from))} → ${esc(pName(x.to))}</span><span class="ko">${esc(tText(x.t))}</span>${x.src==="n"&&noteText(x.t)?`<span class="note">↳ 💬 ${esc(noteText(x.t))}</span>`:""}</li>`).join("")}</ul>` : "";
+}
 function openInbox(id){
-  const list = inboxItems(id);
-  const row = x => `<label class="ibrow ${isAck(x)?"done":""}"><input type="checkbox" data-k="${esc(x.key)}" ${isAck(x)?"checked":""}>
+  const list = inboxItems(id), canAck = id!=="dr" || !!adminUser;
+  const row = x => `<label class="ibrow ${isAck(x)?"done":""}${canAck?"":" ro"}"><input type="checkbox" data-k="${esc(x.key)}" ${isAck(x)?"checked":""} ${canAck?"":"disabled"}>
     <span class="ibm"><b>${esc(pName(x.from))}</b> <em class="${x.eve?"eve":"morn"}">${x.eve?T("🌙 저녁 업데이트","🌙 อัปเดตตอนเย็น"):T("🌅 아침 계획","🌅 แผนตอนเช้า")}</em> <small>${label(x.date)}${x.tm?" "+x.tm:""}</small><br>
     ${esc(tText(x.t).replace(/@[\p{L}\p{M}\p{N}_]+\s*/gu,""))}${x.src==="n"?`<br><span class="ibn">💬 ${esc(tagTxt(x))}</span>`:""}</span></label>`;
+  const hint = canAck
+    ? T("최근 7일 동안 나를 태그한 내용이에요. 읽은 다음 ✅ 체크하면 빨간 표시가 사라져요.","ข้อความที่แท็กถึงคุณใน 7 วันที่ผ่านมา อ่านแล้วกด ✅ เครื่องหมายสีแดงจะหายไปครับ")
+    : T("최근 7일 동안 지사장님을 태그한 내용이에요. 확인 체크는 관리자(🔒) 로그인 후 할 수 있어요.","ข้อความที่แท็กถึงผู้อำนวยการใน 7 วันที่ผ่านมา การเช็กยืนยันทำได้เฉพาะในโหมดผู้ดูแล (🔒) ครับ");
   admModal(`<h3>📥 ${T(`${esc(pName(id))}의 수신함`,`กล่องข้อความของ ${esc(pName(id))}`)}</h3>
-    <p class="hint" style="margin:0 0 6px">${T("최근 7일 동안 나를 태그한 내용이에요. 읽은 다음 ✅ 체크하면 빨간 표시가 사라져요.","ข้อความที่แท็กถึงคุณใน 7 วันที่ผ่านมา อ่านแล้วกด ✅ เครื่องหมายสีแดงจะหายไปครับ")}</p>
+    <p class="hint" style="margin:0 0 6px">${hint}</p>
     <div class="iblist">${list.length ? list.map(row).join("") : `<div class="empty">${T("📭 아직 태그된 내용이 없어요","📭 ยังไม่มีข้อความที่แท็กถึงคุณ")}</div>`}</div>
-    <div class="row"><button type="button" id="ibAll">✅ ${T("모두 확인","อ่านทั้งหมดแล้ว")}</button><button type="button" class="pri" id="ibX">${T("닫기","ปิด")}</button></div>`, w=>{
+    <div class="row">${canAck?`<button type="button" id="ibAll">✅ ${T("모두 확인","อ่านทั้งหมดแล้ว")}</button>`:""}<button type="button" class="pri" id="ibX">${T("닫기","ปิด")}</button></div>`, w=>{
     w.querySelector("#ibX").onclick=()=>w.remove();
+    if (!canAck) return;
     const save = async (keys, on) => {
+      if (!keys.length) return;
       const cur = {...(INBOX[id]||{})}; keys.forEach(k=>{ if(on) cur[k]=true; else delete cur[k]; });
       const keep = addDays(D.current,-14); Object.keys(cur).forEach(k=>{ if(k.slice(0,10)<keep) delete cur[k]; });
-      INBOX[id]=cur; render();
+      INBOX[id]=cur; render(); syncInboxBtn(id);
       try{ await ffs.setDoc(ffs.doc(fdb,"office_inbox",id), {ack:cur, at:ffs.serverTimestamp()}); }catch(e){ console.warn("office_inbox", e.code); alertLite(T("저장하지 못했어요.","บันทึกไม่สำเร็จครับ")); }
     };
     w.querySelectorAll("input[data-k]").forEach(c=>c.onchange=()=>{ c.closest(".ibrow").classList.toggle("done", c.checked); save([c.dataset.k], c.checked); });
@@ -1331,9 +1356,12 @@ async function setDirStatus(status, extra){
 }
 function openDrawer(id){
   editId = id;
+  const date = dates[idx];
   if (id==="dr"){
     document.getElementById("dbody").innerHTML = `
       <div class="dhead">${avatar({id:"dr"}, "working", false)}<div><h2>${esc(D.director.name||"")} <small style="font-weight:400;color:var(--ink-soft)">${esc(T(D.director.label, D.director.label_th||D.director.label))}</small></h2><div class="meta">${T("지사장실","ห้องผู้อำนวยการ")}</div></div></div>
+      ${inboxBtnHTML(id)}
+      ${tagListHTML(id, date)}
       ${adminUser && fdb ? (()=>{ const cur=dirStatus(D.current).status; const b=(k,ic,ko)=>`<button type="button" class="editbtn" style="${cur===k?"":"background:#fff;color:var(--ink);border:1px solid #ccc"}" onclick="setDirStatus('${k}').then(()=>openDrawer('dr'))">${ic} ${ko}${cur===k?" ✓":""}</button>`;
         const lv = Object.entries(FEV).filter(([k,e])=>e.kind==="dirleave" && (e.to||e.from)>=D.current).sort((x,y)=>x[1].from.localeCompare(y[1].from));
         const cs = dirStatus(D.current);
@@ -1358,7 +1386,7 @@ function openDrawer(id){
     showDrawer(); return;
   }
   const st = D.staff.find(s=>s.id===id); if(!st) return;
-  const date = dates[idx], r = report(id,date);
+  const r = report(id,date);
   const team = D.teams.find(t=>t.id===st.team);
   // most recent earlier report if none today
   let prevNote = "";
@@ -1379,8 +1407,8 @@ function openDrawer(id){
     ${canEdit(date) && checkoutMin(id,date)==null ? `<button class="editbtn" type="button" style="background:#f47a1a" onclick="openEdit('${id}','out')">🏠 ${T("퇴근하기","กลับบ้าน")}</button>` : ""}
     ${adminUser && STAFF_DOCS[date+"_"+id]?.early ? `<div class="warn" style="background:#fff4e5;color:#8a4b00">⏰ 조기 퇴근 ${esc(STAFF_DOCS[date+"_"+id].checkout||"")} · 사유: <b>${esc(STAFF_DOCS[date+"_"+id].early)}</b></div>` : ""}
     ${adminUser && fdb && checkoutMin(id,date)!=null ? `<button class="editbtn" type="button" style="background:#fff;color:#a33;border:1px solid #e3b4b4" onclick="undoCheckout('${id}','${date}',this)">↩️ 퇴근 취소 (관리자) · ${esc(STAFF_DOCS[date+"_"+id].checkout)}</button>` : ""}
-    ${fdb ? (()=>{ const n=inboxCount(id); return `<button class="editbtn" type="button" style="background:${n?"#e5484d":"#fff"};color:${n?"#fff":"var(--ink)"};border:1px solid ${n?"#e5484d":"#ccc"}" onclick="openInbox('${id}')">📥 ${T("수신함","กล่องข้อความ")}${n?` · ${T("새 태그","แท็กใหม่")} ${n}`:""}</button>`; })() : ""}
-    ${(()=>{ const tg=tagItems(date).filter(x=>x.from===id||x.to===id); return tg.length ? `<h3>🏷️ ${T("태그","แท็ก")}</h3><ul class="tasks">${tg.map(x=>`<li><span class="pill" style="background:${x.eve?"#8a63d2":"#c9a227"}">${esc(pName(x.from))} → ${esc(pName(x.to))}</span><span class="ko">${esc(tText(x.t))}</span>${x.src==="n"&&noteText(x.t)?`<span class="note">↳ 💬 ${esc(noteText(x.t))}</span>`:""}</li>`).join("")}</ul>` : ""; })()}
+    ${inboxBtnHTML(id)}
+    ${tagListHTML(id, date)}
     ${adminUser && fdb ? absAdminHTML(id) : ""}
     ${r?.routine?.length && LANG!=="th"?`<h3>일상 업무</h3><div class="routine">${r.routine.map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
     ${prevNote}
@@ -1647,7 +1675,7 @@ function openEdit(id, kind){
     const pre = ta.value.slice(0, ta.selectionStart), m = pre.match(/@([\p{L}\p{M}\p{N}_]*)$/u);
     if(!m){ mbar.hidden=true; return; }
     const q = m[1].toLowerCase();
-    const ppl = [...D.staff.map(x=>[x.name, x.kname]), [D.director.name, D.director.kname]].filter(([n,k])=>n && n.toLowerCase()!==st.name.toLowerCase() && (!q || n.toLowerCase().startsWith(q) || (k||"").startsWith(m[1])));
+    const ppl = [...D.staff.map(x=>[x.name, x.kname, x.id]), [D.director.name||"Yohan", D.director.kname, "dr"]].filter(([n,k,pid])=>n && n.toLowerCase()!==st.name.toLowerCase() && (!q || n.toLowerCase().startsWith(q) || (k||"").startsWith(m[1]) || (pid||"").toLowerCase().startsWith(q)));
     if(!ppl.length){ mbar.hidden=true; return; }
     mbar.innerHTML = ppl.map(([n,k])=>`<button type="button" data-n="${esc(n)}">@${esc(n)} <small>${esc(k||"")}</small></button>`).join("");
     ta.insertAdjacentElement("afterend", mbar); mbar.hidden=false;
@@ -1914,7 +1942,7 @@ if (PUBLIC){
       ffs.onSnapshot(ffs.query(ffs.collection(fdb,"office_reports"), ffs.where("date",">=",since)), snap=>{ STAFF_DOCS={}; snap.forEach(d=>STAFF_DOCS[d.id]=d.data()); applyStaffDocs(); }, err=>console.warn("office_reports", err.code)); };
     startSync();
     ffs.onSnapshot(ffs.collection(fdb,"office_projects"), q=>{ PROJ_C = q.docs.map(d=>({_id:d.id, ...d.data()})).filter(x=>x.name).sort((a,b)=>a.name.localeCompare(b.name)); }, err=>console.warn("office_projects", err.code));
-    ffs.onSnapshot(ffs.collection(fdb,"office_inbox"), snap=>{ INBOX={}; snap.forEach(d=>INBOX[d.id]=(d.data().ack)||{}); if (D) render(); }, err=>console.warn("office_inbox", err.code));
+    ffs.onSnapshot(ffs.collection(fdb,"office_inbox"), snap=>{ INBOX={}; snap.forEach(d=>INBOX[d.id]=(d.data().ack)||{}); if (D){ render(); syncInboxBtn(editId); } }, err=>console.warn("office_inbox", err.code));
     ffs.onSnapshot(ffs.doc(fdb,"office_server","state"), d=>{ SERVER = d.exists() ? d.data() : null; if (D) render(); }, err=>console.warn("office_server", err.code));
     ffs.onSnapshot(ffs.collection(fdb,"office_events"), snap=>{ FEV={}; snap.forEach(d=>FEV[d.id]=d.data()); if (D) render(); else renderEvents(); }, err=>console.warn("office_events", err.code));
     fa.onAuthStateChanged(fauth,u=>{ const was=!!adminUser; adminUser=u||null; STAFF=!adminUser;
